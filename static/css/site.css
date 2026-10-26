@@ -577,6 +577,79 @@ body.home-page {
     justify-self: start;
 }
 
+.admin-page .van-schedule-form {
+    border-top: 1px solid var(--line);
+    margin-top: 12px;
+    min-width: 250px;
+    padding-top: 12px;
+}
+
+.admin-page .van-schedule-form > strong {
+    color: var(--pine);
+    display: block;
+    font-size: .85rem;
+    margin-bottom: 8px;
+}
+
+.admin-page .van-schedule-fields {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(2, minmax(110px, 1fr));
+}
+
+.admin-page .van-schedule-form label {
+    font-size: .78rem;
+    margin: 5px 0;
+}
+
+.admin-page .van-schedule-form input,
+.admin-page .van-schedule-form textarea {
+    display: block;
+    margin: 3px 0 6px !important;
+    min-height: 36px;
+    padding: 6px !important;
+}
+
+.admin-page .van-schedule-form textarea {
+    resize: vertical;
+}
+
+.admin-page .van-schedule-form button {
+    font-size: .78rem !important;
+    padding: 8px 12px !important;
+}
+
+.van-booking-list {
+    display: grid;
+    gap: 8px;
+    min-width: 220px;
+}
+
+.van-booking {
+    background: var(--mint);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.van-booking strong,
+.van-booking span,
+.van-booking small {
+    display: block;
+}
+
+.van-booking strong {
+    color: var(--ink);
+    font-size: .84rem;
+}
+
+.van-booking span,
+.van-booking small,
+.van-no-bookings {
+    color: var(--muted);
+    font-size: .76rem;
+}
+
 .admin-notice {
     border-radius: 10px;
     margin: 12px 0 18px;
