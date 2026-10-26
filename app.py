@@ -67,6 +67,9 @@ class Van(db.Model):
     plate_number = db.Column(db.String(50), nullable=True)
     driver_name = db.Column(db.String(100), nullable=True)
     status = db.Column(db.String(50), default="Available")
+    schedule_date = db.Column(db.String(10), nullable=True)
+    schedule_time = db.Column(db.String(5), nullable=True)
+    schedule_note = db.Column(db.String(500), nullable=True)
 
 
 class DestinationRate(db.Model):
@@ -132,6 +135,15 @@ with app.app_context():
             connection.execute(
                 text("ALTER TABLE reservation ADD COLUMN pickup_time VARCHAR(5)")
             )
+
+    van_columns = {column["name"] for column in inspect(db.engine).get_columns("van")}
+    with db.engine.begin() as connection:
+        if "schedule_date" not in van_columns:
+            connection.execute(text("ALTER TABLE van ADD COLUMN schedule_date VARCHAR(10)"))
+        if "schedule_time" not in van_columns:
+            connection.execute(text("ALTER TABLE van ADD COLUMN schedule_time VARCHAR(5)"))
+        if "schedule_note" not in van_columns:
+            connection.execute(text("ALTER TABLE van ADD COLUMN schedule_note VARCHAR(500)"))
 
     if not Van.query.first():
         db.session.add(
@@ -531,6 +543,37 @@ def toggle_van_status(van_id):
         else:
             van.status = "Available"
         db.session.commit()
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/van/<int:van_id>/schedule", methods=["POST"])
+def update_van_schedule(van_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    schedule_date = request.form.get("schedule_date", "").strip()
+    schedule_time = request.form.get("schedule_time", "").strip()
+    schedule_note = request.form.get("schedule_note", "").strip()
+
+    try:
+        if schedule_date:
+            datetime.strptime(schedule_date, "%Y-%m-%d")
+        if schedule_time:
+            datetime.strptime(schedule_time, "%H:%M")
+    except ValueError:
+        flash("Enter a valid manual schedule date and time.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    van = db.session.get(Van, van_id)
+    if van is None:
+        flash("Van not found.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    van.schedule_date = schedule_date or None
+    van.schedule_time = schedule_time or None
+    van.schedule_note = schedule_note or None
+    db.session.commit()
+    flash(f"Manual schedule updated for {van.name}.", "success")
     return redirect(url_for("admin_dashboard"))
 
 
