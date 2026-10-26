@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCash Payment - EnAsia Transport</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 40px;
+            background-color: #f4f4f9;
+        }
+        .card {
+            background: white;
+            max-width: 450px;
+            margin: auto;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h2, h3 {
+            color: #1a5276;
+        }
+        .account-info {
+            background-color: #eef2f5;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .qr-image {
+            margin-top: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 5px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #1a5276;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+</head>
+<body class="payment-page">
+
+<div class="card">
+    <h2>Complete Your Payment</h2>
+    <p><strong>Customer:</strong> {{ client }}</p>
+    <p><strong>Route:</strong> {{ route }}</p>
+    <p><strong>Total Amount:</strong> ₱{{ price }}</p>
+
+    <hr>
+
+    <h3>Scan to Pay via GCash</h3>
+    
+    <div class="account-info">
+        <p style="margin: 5px 0;">Account Name: <strong>Vergilio Enriquez</strong></p>
+        <p style="margin: 5px 0;">GCash Number: <strong>0976-072-9454</strong></p>
+    </div>
+
+    <!-- GCash QR Code Image with larger size -->
+    <img src="{{ url_for('static', filename='images/gcash_qr.png') }}" alt="GCash QR Code" class="qr-image" width="320">
+
+    <br>
+    <a href="/" class="back-link">Back to Home</a>
+</div>
+
+</body>
+</html>

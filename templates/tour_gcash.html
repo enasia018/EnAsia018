@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay Tour Reservation - EnAsia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: #222;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #ff3333;
+        }
+        h2, h3 {
+            color: #ff3333;
+        }
+        .qr-code {
+            max-width: 250px;
+            height: auto;
+            border-radius: 8px;
+            border: 2px solid #fff;
+            margin: 15px 0;
+        }
+        .btn {
+            background-color: #ff3333;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #cc0000;
+        }
+        input[type="file"], input[type="text"] {
+            margin: 10px 0;
+            padding: 8px;
+            width: 80%;
+            border-radius: 5px;
+            border: 1px solid #ff3333;
+            background-color: #333;
+            color: #fff;
+        }
+        .btn-group {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .success-box {
+            background-color: #1e3a1e;
+            border: 2px solid #28a745;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+</head>
+<body class="tour-gcash-page">
+
+    <div class="container">
+        {% if success %}
+            <div class="success-box">
+                <h2>Receipt Uploaded Successfully!</h2>
+                <p>Your screenshot has been successfully sent to the admin. Please wait for a text confirmation from our team.</p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('tour_package') }}" class="btn" style="background-color: #555;">← Back to Tour Details</a>
+                <a href="{{ url_for('home') }}" class="btn" style="background-color: #333;">Home Page</a>
+            </div>
+        {% else %}
+            <h2>GCash Payment for Tour Package</h2>
+            <p>Scan the QR code below or send your <strong>1,000 PHP reservation fee per pax</strong> to our official tour GCash account.</p>
+
+            <img src="{{ url_for('static', filename='images/gcash_qr.png') }}" alt="GCash QR Code" class="qr-code">
+
+            <p><strong>Account Name:</strong> EnAsia Tourist Transport</p>
+            <p><strong>GCash Number:</strong> 0912-345-6789</p>
+
+            <hr style="border: 1px solid #444; margin: 25px 0;">
+
+            <h3>Upload Payment Screenshot</h3>
+            <p style="font-size: 0.85em; color: #ccc;">Enter your full name and attach your GCash receipt.</p>
+
+            <form action="{{ url_for('upload_tour_receipt') }}" method="POST" enctype="multipart/form-data">
+                <input type="text" name="sender_name" placeholder="Full Name of Sender" required><br>
+                <input type="file" name="receipt" accept="image/*" required><br>
+                <button type="submit" class="btn">Send Screenshot to Admin</button>
+            </form>
+
+            <div class="btn-group">
+                <a href="{{ url_for('tour_package') }}" class="btn" style="background-color: #555;">← Tour Details</a>
+            </div>
+        {% endif %}
+    </div>
+
+</body>
+</html>

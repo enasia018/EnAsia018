@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Franchise Application Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #111; color: #fff; padding: 20px; text-align: center; }
+        .container { max-width: 500px; margin: auto; background: #222; padding: 20px; border-radius: 10px; border: 2px solid #ff3333; text-align: left; }
+        input { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 15px; background: #333; border: 1px solid #444; color: #fff; border-radius: 5px; box-sizing: border-box; }
+        button { background-color: #ff3333; color: white; border: none; padding: 10px; width: 100%; font-weight: bold; border-radius: 5px; cursor: pointer; }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+</head>
+<body class="franchise-apply-page">
+    <div class="container">
+        <h2 style="color: #ff3333; text-align: center;">Franchise Application (Option 1)</h2>
+        
+        {% if success %}
+        <p style="color: #4CAF50; text-align: center; font-weight: bold;">Application submitted successfully! Please wait for admin approval.</p>
+        <div style="text-align: center;"><a href="{{ url_for('home') }}" style="color: #ff3333;">← Back to Home</a></div>
+        {% else %}
+        <form method="POST" enctype="multipart/form-data">
+            <label>Full Name:</label>
+            <input type="text" name="full_name" required>
+            
+            <label>Full Address:</label>
+            <input type="text" name="address" required>
+            
+            <label>Contact Number:</label>
+            <input type="text" name="contact" required>
+            
+            <label>Email (Optional):</label>
+            <input type="email" name="email">
+            
+            <label>Type of Vehicle:</label>
+            <input type="text" name="vehicle_type" required>
+            
+            <label>Model of Vehicle:</label>
+            <input type="text" name="vehicle_model" required>
+            
+            <label>Plate Number:</label>
+            <input type="text" name="plate_number" required>
+            
+            <label>Upload OR (Official Receipt):</label>
+            <input type="file" name="or_file" required>
+            
+            <label>Upload CR (Certificate of Registration):</label>
+            <input type="file" name="cr_file" required>
+            
+            <button type="submit">Submit Application</button>
+        </form>
+        <br><a href="{{ url_for('franchise') }}" style="color: #ff3333; text-decoration: none;">← Back</a>
+        {% endif %}
+    </div>
+</body>
+</html>

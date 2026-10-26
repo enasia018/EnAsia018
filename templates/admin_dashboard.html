@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #fff;
+            padding: 20px;
+        }
+        h2, h3 {
+            color: #ff3333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            background: #222;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #333;
+            color: #ff3333;
+        }
+        .btn-approve {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        .btn-delete {
+            background-color: #ff3333;
+            color: white;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        .btn-toggle {
+            background-color: #ff9800;
+            color: white;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        .btn-add {
+            background-color: #ff3333;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 3px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn-logout {
+            background-color: #ff3333;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            float: right;
+        }
+        .form-box {
+            background: #222;
+            padding: 15px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: inline-block;
+            vertical-align: top;
+        }
+        input[type="text"] {
+            padding: 6px;
+            margin-right: 10px;
+            margin-bottom: 5px;
+            border-radius: 3px;
+            border: none;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+</head>
+<body class="admin-page">
+
+    <a href="{{ url_for('admin_logout') }}" class="btn-logout">Logout</a>
+    <h2>Admin Dashboard</h2>
+
+    <!-- Form to add a new Van -->
+    <div class="form-box">
+        <h4>Add New Van</h4>
+        <form action="{{ url_for('add_van') }}" method="POST">
+            <input type="text" name="van_name" placeholder="Van Name" required><br>
+            <input type="text" name="plate_number" placeholder="Plate Number"><br>
+            <input type="text" name="driver_name" placeholder="Driver Name"><br>
+            <button type="submit" class="btn-add">Add Van</button>
+        </form>
+    </div>
+
+    <!-- Form to add Pick-up & Destination Rate -->
+    <div class="form-box" style="margin-left: 20px;">
+        <h4>Add Pick-up & Destination Rate</h4>
+        <form action="{{ url_for('add_rate') }}" method="POST">
+            <input type="text" name="pickup_location" placeholder="Pick-up Location" required><br>
+            <input type="text" name="destination" placeholder="Destination Name" required><br>
+            <input type="text" name="rate_per_day" placeholder="Rate per Day (₱)" required><br>
+            <button type="submit" class="btn-add">Add Rate</button>
+        </form>
+    </div>
+
+    <!-- Form to add a new Franchise Option -->
+    <div class="form-box" style="margin-left: 20px;">
+        <h4>Add Franchise Option</h4>
+        <form action="{{ url_for('add_franchise_option') }}" method="POST">
+            <input type="text" name="title" placeholder="Option Title" required><br>
+            <input type="text" name="details" placeholder="Option Details" required><br>
+            <button type="submit" class="btn-add">Add Option</button>
+        </form>
+    </div>
+
+    <!-- Section 1: Van Management -->
+    <h3>Van List and Availability</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Van Details & Update</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for van in vans %}
+            <tr>
+                <td>{{ van.id }}</td>
+                <td>
+                    <form action="{{ url_for('edit_van', van_id=van.id) }}" method="POST" style="display:inline;">
+                        <input type="text" name="van_name" value="{{ van.name }}" required style="background:#333; color:#fff; border:1px solid #555; width: 110px;">
+                        <input type="text" name="plate_number" value="{{ van.plate_number or '' }}" placeholder="Plate" style="background:#333; color:#fff; border:1px solid #555; width: 90px;">
+                        <input type="text" name="driver_name" value="{{ van.driver_name or '' }}" placeholder="Driver" style="background:#333; color:#fff; border:1px solid #555; width: 100px;">
+                        <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update</button>
+                    </form>
+                </td>
+                <td>
+                    {% if van.status == 'Available' %}
+                        <span style="color: #4CAF50; font-weight: bold;">Available</span>
+                    {% else %}
+                        <span style="color: #ff4d4d; font-weight: bold;">Not Available</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('toggle_van_status', van_id=van.id) }}" class="btn-toggle">Change Status</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Section 2: Destination Rates Management -->
+    <h3>Pick-up & Destination Rates Management</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Pick-up, Destination & Rate Settings</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rate in rates %}
+            <tr>
+                <td>{{ rate.id }}</td>
+                <td>
+                    <form action="{{ url_for('edit_rate', rate_id=rate.id) }}" method="POST" style="display:inline;">
+                        <input type="text" name="pickup_location" value="{{ rate.pickup_location }}" placeholder="Pick-up" required style="background:#333; color:#fff; border:1px solid #555; width: 160px;">
+                        <input type="text" name="destination" value="{{ rate.destination }}" placeholder="Destination" required style="background:#333; color:#fff; border:1px solid #555; width: 160px;">
+                        <input type="text" name="rate_per_day" value="{{ rate.rate_per_day }}" placeholder="Rate (₱)" required style="background:#333; color:#fff; border:1px solid #555; width: 100px;">
+                        <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update Rate</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Section 3: Franchise Options Management -->
+    <h3>Franchise Options Management</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title & Details Settings</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for option in franchise_options %}
+            <tr>
+                <td>{{ option.id }}</td>
+                <td>
+                    <form action="{{ url_for('edit_franchise_option', option_id=option.id) }}" method="POST" style="display:inline;">
+                        <input type="text" name="title" value="{{ option.title }}" required style="background:#333; color:#fff; border:1px solid #555; width: 200px;">
+                        <input type="text" name="details" value="{{ option.details }}" required style="background:#333; color:#fff; border:1px solid #555; width: 300px;">
+                        <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update Option</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Section 4: Franchise Applications Management -->
+    <h3>Franchise Applications (Option 1 & 2)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Applicant Details</th>
+                <th>Vehicle Info</th>
+                <th>Documents</th>
+                <th>Status / Schedule</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for app in franchise_apps %}
+            <tr>
+                <td>{{ app.id }}</td>
+                <td>
+                    <strong>{{ app.full_name }}</strong><br>
+                    Address: {{ app.address }}<br>
+                    Contact: {{ app.contact }}<br>
+                    Email: {{ app.email or 'N/A' }}
+                </td>
+                <td>
+                    Type: {{ app.vehicle_type }}<br>
+                    Model: {{ app.vehicle_model }}<br>
+                    Plate: {{ app.plate_number }}
+                </td>
+                <td>
+                    <a href="{{ url_for('static', filename='uploads/' + app.or_file) }}" target="_blank" style="color: #007bff;">View OR</a> | 
+                    <a href="{{ url_for('static', filename='uploads/' + app.cr_file) }}" target="_blank" style="color: #007bff;">View CR</a>
+                </td>
+                <td>
+                    {{ app.status }}
+                    {% if app.schedule %}
+                    <br><small style="color: #ff9800;">Schedule: {{ app.schedule }}</small>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if 'Pending' in app.status %}
+                    <form action="{{ url_for('approve_franchise', app_id=app.id) }}" method="POST">
+                        <input type="text" name="schedule" placeholder="Office Schedule" required style="width: 130px; background:#333; color:#fff; border:1px solid #555;">
+                        <button type="submit" class="btn-approve" style="border:none; cursor:pointer;">Approve</button>
+                    </form>
+                    {% else %}
+                    Approved
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Section 5: Tour Applications Management -->
+    <h3>Tour Applications & Payment Receipts</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Applicant Details</th>
+                <th>Tour Info</th>
+                <th>Status</th>
+                <th>GCash Receipt</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tour in tour_apps %}
+            <tr>
+                <td>{{ tour.id }}</td>
+                <td>
+                    <strong>{{ tour.full_name }}</strong><br>
+                    Address: {{ tour.address }}<br>
+                    Contact: {{ tour.contact }}<br>
+                    Email: {{ tour.email or 'N/A' }}
+                </td>
+                <td>
+                    Package: {{ tour.tour_package }}<br>
+                    Date: {{ tour.tour_date }}<br>
+                    Pax: {{ tour.pax }}
+                </td>
+                <td>{{ tour.status }}</td>
+                <td>
+                    {% if tour.receipt %}
+                        <a href="{{ url_for('static', filename='uploads/' + tour.receipt) }}" target="_blank" style="color: #007bff;">View Receipt</a>
+                    {% else %}
+                        No Receipt Yet
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('delete_tour', app_id=tour.id) }}" class="btn-delete" onclick="return confirm('Are you sure you want to delete this tour application?');">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Section 6: GCash Payments Management -->
+    <h3>GCash Payment</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Contact Number</th>
+                <th>Receipt Screenshot</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in gcash_payments %}
+            <tr>
+                <td>{{ payment.id }}</td>
+                <td>{{ payment.full_name }}</td>
+                <td>{{ payment.contact }}</td>
+                <td>
+                    {% if payment.receipt %}
+                        <a href="{{ url_for('static', filename='uploads/' + payment.receipt) }}" target="_blank" style="color: #007bff;">View Receipt</a>
+                    {% else %}
+                        No Receipt
+                    {% endif %}
+                </td>
+                <td>{{ payment.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Section 7: Reservation Management -->
+    <h3>Reservation List</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Rented Van</th>
+                <th>Status</th>
+                <th>Receipt</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reservations %}
+            <tr>
+                <td>{{ r.id }}</td>
+                <td>{{ r.name }}</td>
+                <td>{{ r.contact }}</td>
+                <td>{{ r.vans }}</td>
+                <td>{{ r.status }}</td>
+                <td>
+                    {% if r.receipt %}
+                        <a href="{{ url_for('static', filename='uploads/' + r.receipt) }}" target="_blank" style="color: #007bff;">View Receipt</a>
+                    {% else %}
+                        None
+                    {% endif %}
+                </td>
+                <td>
+                    {% if r.status == 'Pending' %}
+                        <a href="{{ url_for('approve_reservation', res_id=r.id) }}" class="btn-approve">Approve</a>
+                    {% else %}
+                        Approved
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

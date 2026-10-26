@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Van Rental Booking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #fff;
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+        }
+        h2 {
+            color: #ff3333;
+            text-align: center;
+        }
+        form {
+            background: #222;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: none;
+            background: #333;
+            color: #fff;
+        }
+        button {
+            background-color: #ff3333;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #cc0000;
+        }
+        .quote-box {
+            background: #222;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid #ff3333;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .success-msg {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .btn-home {
+            background-color: #555;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        .btn-home:hover {
+            background-color: #777;
+        }
+    </style>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+    </head>
+    <body class="rental-page">
+
+    <h2>Book Your Van Rental</h2>
+
+    {% if success %}
+        <div class="success-msg">Your reservation has been successfully submitted!</div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+        <label>Full Name:</label>
+        <input type="text" name="name" required>
+
+        <label>Address:</label>
+        <input type="text" name="address" required>
+
+        <label>Contact Number:</label>
+        <input type="text" name="contact" required>
+
+        <label>Select Van:</label>
+        <select name="vans" required>
+            {% for van in vans_list %}
+                <option value="{{ van.name }}">{{ van.name }} (Plate: {{ van.plate_number }})</option>
+            {% endfor %}
+        </select>
+
+        <label>Destination & Rate:</label>
+        <select name="destination" id="destination" required onchange="calculateQuote()">
+            <option value="" data-rate="0">-- Select Destination --</option>
+            {% for rate in rates %}
+                <option value="{{ rate.destination }}" data-rate="{{ rate.rate_per_day }}">
+                    {{ rate.destination }} - ₱{{ rate.rate_per_day }} per day
+                </option>
+            {% endfor %}
+        </select>
+
+        <label>Number of Days:</label>
+        <input type="number" name="days" id="days" value="1" min="1" required oninput="calculateQuote()">
+
+        <label>Number of Nights:</label>
+        <input type="text" name="nights">
+
+        <label>Pickup Location:</label>
+        <input type="text" name="pickup" required>
+
+        <label>Drop-off Location:</label>
+        <input type="text" name="dropoff" required>
+
+        <label>Upload Payment Receipt (GCash):</label>
+        <input type="file" name="receipt">
+
+        <button type="submit">Submit Reservation</button>
+    </form>
+
+    <div class="quote-box">
+        <h3>Estimated Quote: <span id="totalQuote" style="color: #4CAF50;">₱0.00</span></h3>
+    </div>
+
+    <div style="text-align: center;">
+        <a href="{{ url_for('home') }}" class="btn-home">← Back to Home Page</a>
+    </div>
+
+    <script>
+        function calculateQuote() {
+            const destinationSelect = document.getElementById('destination');
+            const selectedOption = destinationSelect.options[destinationSelect.selectedIndex];
+            const ratePerDay = parseFloat(selectedOption.getAttribute('data-rate')) || 0;
+            
+            const days = parseInt(document.getElementById('days').value) || 0;
+            const total = ratePerDay * days;
+
+            document.getElementById('totalQuote').innerText = '₱' + total.toLocaleString();
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fbfaf7">
+    <meta name="description" content="Discover the Philippines with EnAsia Tourist Transport. Book a van, explore tour packages, or check availability.">
+    <title>EnAsia Tourist Transport | Your next road trip starts here</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=4) }}">
+</head>
+<body class="home-page">
+    <header class="site-header">
+        <a class="brand" href="{{ url_for('home') }}" aria-label="EnAsia home">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="" class="brand-logo">
+            <span class="brand-copy">
+                <span class="brand-name">EnAsia<span>018</span></span>
+                <span class="brand-tagline">Travel · Tours · Van Rentals</span>
+            </span>
+        </a>
+
+        <nav class="main-nav" aria-label="Main navigation">
+            <a href="{{ url_for('rental') }}">Van Rental</a>
+            <a href="{{ url_for('tour_package') }}">Tour Packages</a>
+            <a href="{{ url_for('franchise') }}">Franchise</a>
+            <a href="{{ url_for('vans_list') }}">Our Vans</a>
+            <a href="{{ url_for('check_status') }}">Check Status</a>
+            <a href="{{ url_for('gcash_page') }}" class="nav-payment">Pay via GCash</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero" aria-labelledby="hero-title">
+            <div class="hero-gallery" aria-hidden="true">
+                <img src="{{ url_for('static', filename='images/enasia-van-hero.jpeg') }}" alt="">
+            </div>
+            <div class="hero-shade"></div>
+            <div class="hero-content">
+                <span class="hero-eyebrow">Driven by Safety, Defined by Trust</span>
+                <h1 id="hero-title">Your next road trip starts here.</h1>
+                <p>Van rentals, beach tour packages and franchise opportunities with EnAsia Tourist Transport.</p>
+                <div class="hero-actions">
+                    <a href="{{ url_for('rental') }}" class="hero-button hero-button-primary">Book a Van</a>
+                    <a href="{{ url_for('tour_package') }}" class="hero-button hero-button-secondary">See Tour Packages</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="service-links" aria-label="Explore EnAsia services">
+            <a href="{{ url_for('rental') }}" class="service-link">
+                <span class="service-number">01</span>
+                <span><strong>Van rentals</strong><small>Find your ride</small></span>
+                <span class="service-arrow" aria-hidden="true">↗</span>
+            </a>
+            <a href="{{ url_for('tour_package') }}" class="service-link">
+                <span class="service-number">02</span>
+                <span><strong>Tour packages</strong><small>Find your next escape</small></span>
+                <span class="service-arrow" aria-hidden="true">↗</span>
+            </a>
+            <a href="{{ url_for('franchise') }}" class="service-link">
+                <span class="service-number">03</span>
+                <span><strong>Franchise</strong><small>Grow with EnAsia</small></span>
+                <span class="service-arrow" aria-hidden="true">↗</span>
+            </a>
+        </section>
+    </main>
+</body>
+</html>

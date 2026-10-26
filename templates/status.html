@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Reservation Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ff3333;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px 0;
+            width: 90%;
+            border-radius: 5px;
+            border: none;
+        }
+        button {
+            background-color: #ff3333;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .success-box {
+            background-color: #1e3a1e;
+            border: 2px solid #28a745;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .btn-home {
+            background-color: #555;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        .btn-home:hover {
+            background-color: #777;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+</head>
+<body class="status-page">
+
+    <div class="container">
+        {% if upload_success %}
+            <div class="success-box">
+                <h2>Receipt Sent Successfully!</h2>
+                <p>Your payment screenshot has been sent. We will send a confirmation via email or text to your cellphone number.</p>
+            </div>
+            <a href="{{ url_for('home') }}" class="btn-home">Back to Home Page</a>
+        {% else %}
+            <h2>Check Reservation Status</h2>
+            
+            <form action="{{ url_for('check_status') }}" method="POST">
+                <input type="text" name="search_name" placeholder="Type your full name" required>
+                <button type="submit">Check Status</button>
+            </form>
+
+            {% if result %}
+                <hr>
+                {% if result == 'not_found' %}
+                    <p style="color: #ff4d4d;">No reservation found under that name.</p>
+                {% else %}
+                    <h3>Results for {{ result.name }}</h3>
+                    <p><strong>Status:</strong> {{ result.status }}</p>
+                    <p><strong>Van:</strong> {{ result.vans }}</p>
+
+                    {% if result.status == 'Approved' %}
+                        <div style="background-color: #333; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                            <p style="color: #4CAF50; font-weight: bold;">Your reservation has been approved!</p>
+                            <a href="{{ url_for('gcash_page') }}" target="_blank" style="color: #007bff; display: block; margin-bottom: 10px;">Pay via GCash</a>
+
+                            <p>Upload your receipt screenshot below:</p>
+                            <form action="{{ url_for('upload_receipt', res_id=result.id) }}" method="POST" enctype="multipart/form-data">
+                                <input type="file" name="receipt" accept="image/*" required style="color: white;">
+                                <button type="submit">Send Screenshot of Payment</button>
+                            </form>
+                        </div>
+                    {% elif result.status == 'Pending' %}
+                        <p style="color: #ffcc00;">Your reservation is still being reviewed by the admin.</p>
+                    {% endif %}
+                {% endif %}
+            {% endif %}
+
+            <br>
+            <a href="{{ url_for('home') }}" class="btn-home">Back to Home</a>
+        {% endif %}
+    </div>
+
+</body>
+</html>

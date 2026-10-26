@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCash Payment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            background: #222;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #ff3333;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        input, button {
+            width: 90%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border: none;
+            background: #333;
+            color: #fff;
+        }
+        button {
+            background-color: #ff3333;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #cc0000;
+        }
+        .btn-home {
+            background-color: #555;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        .btn-home:hover {
+            background-color: #777;
+        }
+        .success-msg {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+</head>
+<body class="gcash-page">
+    <div class="container">
+        <h2>GCash Payment</h2>
+
+        {% if success %}
+            <div class="success-msg">Payment screenshot sent successfully!</div>
+        {% endif %}
+
+        <p>Scan the QR code below to pay:</p>
+        <img src="{{ url_for('static', filename='images/gcash_qr.png') }}" alt="GCash QR">
+
+        <h3>Send Payment Screenshot</h3>
+        <form action="{{ url_for('submit_gcash_payment') }}" method="POST" enctype="multipart/form-data">
+            <input type="text" name="full_name" placeholder="Full Name" required>
+            <input type="text" name="contact" placeholder="Contact Number" required>
+            <input type="file" name="receipt" accept="image/*" required>
+            <button type="submit">Send Screenshot</button>
+        </form>
+
+        <a href="{{ url_for('home') }}" class="btn-home">Back to Home Page</a>
+    </div>
+</body>
+</html>
