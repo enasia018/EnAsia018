@@ -90,6 +90,11 @@
 
     <a href="{{ url_for('admin_logout') }}" class="btn-logout">Logout</a>
     <h2>Admin Dashboard</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="admin-notice admin-notice-{{ category }}" role="status">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
 
     <!-- Form to add a new Van -->
     <div class="form-box">
@@ -349,6 +354,7 @@
                 <th>Name</th>
                 <th>Contact</th>
                 <th>Rented Van</th>
+                <th>Pickup Schedule</th>
                 <th>Status</th>
                 <th>Receipt</th>
                 <th>Action</th>
@@ -361,6 +367,19 @@
                 <td>{{ r.name }}</td>
                 <td>{{ r.contact }}</td>
                 <td>{{ r.vans }}</td>
+                <td>
+                    <form action="{{ url_for('update_reservation_schedule', res_id=r.id) }}" method="POST" class="schedule-form">
+                        <label>
+                            Date
+                            <input type="date" name="pickup_date" value="{{ r.pickup_date or '' }}" required>
+                        </label>
+                        <label>
+                            Time
+                            <input type="time" name="pickup_time" value="{{ r.pickup_time or '' }}" required>
+                        </label>
+                        <button type="submit" class="btn-add">Save Schedule</button>
+                    </form>
+                </td>
                 <td>{{ r.status }}</td>
                 <td>
                     {% if r.receipt %}

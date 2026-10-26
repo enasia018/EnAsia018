@@ -81,6 +81,12 @@
                     <h3>Results for {{ result.name }}</h3>
                     <p><strong>Status:</strong> {{ result.status }}</p>
                     <p><strong>Van:</strong> {{ result.vans }}</p>
+                    {% if result.pickup_date %}
+                        <p><strong>Pickup Date:</strong> {{ result.pickup_date }}</p>
+                    {% endif %}
+                    {% if result.pickup_time %}
+                        <p><strong>Pickup Time:</strong> {{ result.pickup_time }}</p>
+                    {% endif %}
 
                     {% if result.status == 'Approved' %}
                         <div style="background-color: #333; padding: 15px; border-radius: 8px; margin-top: 15px;">
