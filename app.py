@@ -1,5 +1,6 @@
 import os
 import smtplib
+from datetime import datetime
 from email.message import EmailMessage
 from flask import (
     Flask,
@@ -11,6 +12,7 @@ from flask import (
     url_for,
 )
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect, text
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -50,6 +52,8 @@ class Reservation(db.Model):
     contact = db.Column(db.String(50), nullable=False)
     vans = db.Column(db.String(50), nullable=False)
     pickup = db.Column(db.String(100), nullable=False)
+    pickup_date = db.Column(db.String(10), nullable=True)
+    pickup_time = db.Column(db.String(5), nullable=True)
     dropoff = db.Column(db.String(100), nullable=False)
     days = db.Column(db.String(20), nullable=False)
     nights = db.Column(db.String(20), nullable=False)
@@ -116,6 +120,19 @@ class GCashPayment(db.Model):
 
 with app.app_context():
     db.create_all()
+    reservation_columns = {
+        column["name"] for column in inspect(db.engine).get_columns("reservation")
+    }
+    with db.engine.begin() as connection:
+        if "pickup_date" not in reservation_columns:
+            connection.execute(
+                text("ALTER TABLE reservation ADD COLUMN pickup_date VARCHAR(10)")
+            )
+        if "pickup_time" not in reservation_columns:
+            connection.execute(
+                text("ALTER TABLE reservation ADD COLUMN pickup_time VARCHAR(5)")
+            )
+
     if not Van.query.first():
         db.session.add(
             Van(
@@ -291,6 +308,8 @@ def rental():
         contact = request.form.get("contact")
         vans = request.form.get("vans")
         pickup = request.form.get("pickup")
+        pickup_date = request.form.get("pickup_date")
+        pickup_time = request.form.get("pickup_time")
         dropoff = request.form.get("dropoff")
         days = request.form.get("days")
         nights = request.form.get("nights")
@@ -307,6 +326,8 @@ def rental():
             contact=contact,
             vans=vans,
             pickup=pickup,
+            pickup_date=pickup_date,
+            pickup_time=pickup_time,
             dropoff=dropoff,
             days=days,
             nights=nights,
@@ -447,6 +468,32 @@ def approve_reservation(res_id):
     if reservation:
         reservation.status = "Approved"
         db.session.commit()
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/reservation/<int:res_id>/schedule", methods=["POST"])
+def update_reservation_schedule(res_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    pickup_date = request.form.get("pickup_date", "").strip()
+    pickup_time = request.form.get("pickup_time", "").strip()
+    try:
+        datetime.strptime(pickup_date, "%Y-%m-%d")
+        datetime.strptime(pickup_time, "%H:%M")
+    except ValueError:
+        flash("Enter a valid pickup date and time.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    reservation = db.session.get(Reservation, res_id)
+    if reservation is None:
+        flash("Reservation not found.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    reservation.pickup_date = pickup_date
+    reservation.pickup_time = pickup_time
+    db.session.commit()
+    flash(f"Pickup schedule updated for {reservation.name}.", "success")
     return redirect(url_for("admin_dashboard"))
 
 
