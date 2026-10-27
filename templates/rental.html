@@ -76,7 +76,7 @@
             background-color: #777;
         }
     </style>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=2) }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=3) }}">
     </head>
     <body class="rental-page">
 
@@ -138,7 +138,8 @@
     </form>
 
     <div class="quote-box">
-        <h3>Estimated Quote: <span id="totalQuote" style="color: #4CAF50;">₱0.00</span></h3>
+        <h3 id="estimatedQuote">Estimated Quote: <span id="totalQuote" style="color: #4CAF50;">₱0.00</span></h3>
+        <p id="discountQuote" class="discount-quote" hidden>For bookings of 3 days or more, we’ll send you a discounted price.</p>
     </div>
 
     <div style="text-align: center;">
@@ -150,12 +151,24 @@
             const destinationSelect = document.getElementById('destination');
             const selectedOption = destinationSelect.options[destinationSelect.selectedIndex];
             const ratePerDay = parseFloat(selectedOption.getAttribute('data-rate')) || 0;
-            
             const days = parseInt(document.getElementById('days').value) || 0;
+            const estimatedQuote = document.getElementById('estimatedQuote');
+            const discountQuote = document.getElementById('discountQuote');
+
+            if (days >= 3) {
+                estimatedQuote.hidden = true;
+                discountQuote.hidden = false;
+                return;
+            }
+
+            estimatedQuote.hidden = false;
+            discountQuote.hidden = true;
             const total = ratePerDay * days;
 
             document.getElementById('totalQuote').innerText = '₱' + total.toLocaleString();
         }
+
+        calculateQuote();
     </script>
 
 </body>
