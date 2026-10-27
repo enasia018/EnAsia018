@@ -108,7 +108,13 @@
             <option value="" data-rate="0">-- Select Destination --</option>
             {% for rate in rates %}
                 <option value="{{ rate.destination }}" data-rate="{{ rate.rate_per_day }}">
-                    {{ rate.destination }} - ₱{{ rate.rate_per_day }} per day
+                    {{ rate.destination }} -
+                    {% if rate.rate_per_day == (rate.rate_per_day|int) %}
+                        ₱{{ '{:,.0f}'.format(rate.rate_per_day) }}
+                    {% else %}
+                        ₱{{ '{:,.2f}'.format(rate.rate_per_day) }}
+                    {% endif %}
+                    per day
                 </option>
             {% endfor %}
         </select>
