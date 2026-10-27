@@ -219,7 +219,7 @@
                     <form action="{{ url_for('edit_rate', rate_id=rate.id) }}" method="POST" style="display:inline;">
                         <input type="text" name="pickup_location" value="{{ rate.pickup_location }}" placeholder="Pick-up" required style="background:#333; color:#fff; border:1px solid #555; width: 160px;">
                         <input type="text" name="destination" value="{{ rate.destination }}" placeholder="Destination" required style="background:#333; color:#fff; border:1px solid #555; width: 160px;">
-                        <input type="text" name="rate_per_day" value="{{ rate.rate_per_day }}" placeholder="Rate (₱)" required style="background:#333; color:#fff; border:1px solid #555; width: 100px;">
+                        <input type="text" name="rate_per_day" value="{{ '{:,.0f}'.format(rate.rate_per_day) if rate.rate_per_day == (rate.rate_per_day|int) else '{:,.2f}'.format(rate.rate_per_day) }}" placeholder="Rate (₱)" required style="background:#333; color:#fff; border:1px solid #555; width: 100px;">
                         <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update Rate</button>
                     </form>
                 </td>
