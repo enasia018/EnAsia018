@@ -168,6 +168,12 @@
                         <span class="van-no-bookings">No linked reservations</span>
                     {% endif %}
 
+                    <form action="{{ url_for('delete_van_reservations', van_id=van.id) }}" method="POST" style="margin: 10px 0;">
+                        <button type="submit" class="btn-delete" style="border: none; cursor: pointer;" onclick="return confirm('Permanently delete ALL reservations for this van? This cannot be undone.');">
+                            Delete All Reservations for This Van
+                        </button>
+                    </form>
+
                     <form action="{{ url_for('update_van_schedule', van_id=van.id) }}" method="POST" class="van-schedule-form">
                         <strong>Manual schedule / note</strong>
                         <div class="van-schedule-fields">
@@ -432,6 +438,11 @@
                     {% else %}
                         Approved
                     {% endif %}
+                    <form action="{{ url_for('delete_reservation', res_id=r.id) }}" method="POST" style="margin-top: 8px;">
+                        <button type="submit" class="btn-delete" style="border: none; cursor: pointer;" onclick="return confirm('Permanently delete this reservation for {{ r.name | e }}? This cannot be undone.');">
+                            Delete This Reservation
+                        </button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}
