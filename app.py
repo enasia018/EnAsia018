@@ -887,4 +887,7 @@ def admin_logout():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Listen on all interfaces so SnapDeploy's gateway can reach Flask.
+    # Use the port assigned by the host, falling back to 5000 for local use.
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
