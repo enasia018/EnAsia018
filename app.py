@@ -52,6 +52,7 @@ class Reservation(db.Model):
     contact = db.Column(db.String(50), nullable=False)
     vans = db.Column(db.String(50), nullable=False)
     pickup = db.Column(db.String(100), nullable=False)
+    destination = db.Column(db.String(200), nullable=True)
     pickup_date = db.Column(db.String(10), nullable=True)
     pickup_time = db.Column(db.String(5), nullable=True)
     dropoff = db.Column(db.String(100), nullable=False)
@@ -134,6 +135,10 @@ with app.app_context():
         if "pickup_time" not in reservation_columns:
             connection.execute(
                 text("ALTER TABLE reservation ADD COLUMN pickup_time VARCHAR(5)")
+            )
+        if "destination" not in reservation_columns:
+            connection.execute(
+                text("ALTER TABLE reservation ADD COLUMN destination VARCHAR(200)")
             )
 
     van_columns = {column["name"] for column in inspect(db.engine).get_columns("van")}
@@ -319,6 +324,9 @@ def rental():
         address = request.form.get("address")
         contact = request.form.get("contact")
         vans = request.form.get("vans")
+        destination = request.form.get("destination", "").strip()
+        if destination == "__other__":
+            destination = request.form.get("other_destination", "").strip()
         pickup = request.form.get("pickup")
         pickup_date = request.form.get("pickup_date")
         pickup_time = request.form.get("pickup_time")
@@ -338,6 +346,7 @@ def rental():
             contact=contact,
             vans=vans,
             pickup=pickup,
+            destination=destination or None,
             pickup_date=pickup_date,
             pickup_time=pickup_time,
             dropoff=dropoff,
