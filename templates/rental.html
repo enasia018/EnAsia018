@@ -76,7 +76,7 @@
             background-color: #777;
         }
     </style>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=3) }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=4) }}">
     </head>
     <body class="rental-page">
 
@@ -104,7 +104,7 @@
         </select>
 
         <label>Destination & Rate:</label>
-        <select name="destination" id="destination" required onchange="calculateQuote()">
+        <select name="destination" id="destination" required>
             <option value="" data-rate="0">-- Select Destination --</option>
             {% for rate in rates %}
                 <option value="{{ rate.destination }}" data-rate="{{ rate.rate_per_day }}">
@@ -117,7 +117,13 @@
                     per day
                 </option>
             {% endfor %}
+            <option value="__other__" data-rate="0">Destination is not in the list</option>
         </select>
+
+        <div id="otherDestinationGroup" hidden>
+            <label for="otherDestination">Enter Your Destination:</label>
+            <input type="text" name="other_destination" id="otherDestination" maxlength="200" placeholder="Type your destination">
+        </div>
 
         <label>Number of Days:</label>
         <input type="number" name="days" id="days" value="1" min="1" required oninput="calculateQuote()">
@@ -131,8 +137,8 @@
         <label>Number of Nights:</label>
         <input type="text" name="nights">
 
-        <label>Pickup Location:</label>
-        <input type="text" name="pickup" required>
+        <label for="pickupLocation">Pickup Location (type your pickup place):</label>
+        <input type="text" name="pickup" id="pickupLocation" required>
 
         <label>Drop-off Location:</label>
         <input type="text" name="dropoff" required>
@@ -146,6 +152,7 @@
     <div class="quote-box">
         <h3 id="estimatedQuote">Estimated Quote: <span id="totalQuote" style="color: #4CAF50;">₱0.00</span></h3>
         <p id="discountQuote" class="discount-quote" hidden>For bookings of 3 days or more, we’ll send you a discounted price.</p>
+        <p id="customDestinationQuote" class="discount-quote" hidden>We’ll contact you at the cellphone number you provide after you submit your reservation.</p>
     </div>
 
     <div style="text-align: center;">
@@ -153,6 +160,16 @@
     </div>
 
     <script>
+        function handleDestinationChange() {
+            const isCustomDestination = document.getElementById('destination').value === '__other__';
+            const otherDestinationGroup = document.getElementById('otherDestinationGroup');
+            const otherDestination = document.getElementById('otherDestination');
+
+            otherDestinationGroup.hidden = !isCustomDestination;
+            otherDestination.required = isCustomDestination;
+            calculateQuote();
+        }
+
         function calculateQuote() {
             const destinationSelect = document.getElementById('destination');
             const selectedOption = destinationSelect.options[destinationSelect.selectedIndex];
@@ -160,20 +177,31 @@
             const days = parseInt(document.getElementById('days').value) || 0;
             const estimatedQuote = document.getElementById('estimatedQuote');
             const discountQuote = document.getElementById('discountQuote');
+            const customDestinationQuote = document.getElementById('customDestinationQuote');
+
+            if (destinationSelect.value === '__other__') {
+                estimatedQuote.hidden = true;
+                discountQuote.hidden = true;
+                customDestinationQuote.hidden = false;
+                return;
+            }
 
             if (days >= 3) {
                 estimatedQuote.hidden = true;
                 discountQuote.hidden = false;
+                customDestinationQuote.hidden = true;
                 return;
             }
 
             estimatedQuote.hidden = false;
             discountQuote.hidden = true;
+            customDestinationQuote.hidden = true;
             const total = ratePerDay * days;
 
             document.getElementById('totalQuote').innerText = '₱' + total.toLocaleString();
         }
 
+        document.getElementById('destination').addEventListener('change', handleDestinationChange);
         calculateQuote();
     </script>
 

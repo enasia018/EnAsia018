@@ -390,6 +390,7 @@
                 <th>Name</th>
                 <th>Contact</th>
                 <th>Rented Van</th>
+                <th>Destination</th>
                 <th>Pickup Schedule</th>
                 <th>Status</th>
                 <th>Receipt</th>
@@ -403,6 +404,7 @@
                 <td>{{ r.name }}</td>
                 <td>{{ r.contact }}</td>
                 <td>{{ r.vans }}</td>
+                <td>{{ r.destination or 'Not provided' }}</td>
                 <td>
                     <form action="{{ url_for('update_reservation_schedule', res_id=r.id) }}" method="POST" class="schedule-form">
                         <label>
