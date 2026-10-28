@@ -251,7 +251,18 @@ def franchise_apply(option_id):
 @app.route("/vans-list")
 def vans_list():
     all_vans = Van.query.all()
-    return render_template("vans_list.html", vans=all_vans)
+    approved_reservations = Reservation.query.filter_by(status="Approved").order_by(
+        Reservation.pickup_date, Reservation.pickup_time
+    ).all()
+    reservations_by_van = {}
+    for reservation in approved_reservations:
+        reservations_by_van.setdefault(reservation.vans, []).append(reservation)
+
+    return render_template(
+        "vans_list.html",
+        vans=all_vans,
+        reservations_by_van=reservations_by_van,
+    )
 
 
 @app.route("/tour-package")
