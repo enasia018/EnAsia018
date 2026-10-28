@@ -1,7 +1,8 @@
 import os
 import smtplib
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from email.message import EmailMessage
+from zoneinfo import ZoneInfo
 from flask import (
     Flask,
     flash,
@@ -35,9 +36,53 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
+BUSINESS_TIMEZONE = ZoneInfo("Asia/Manila")
 
 
+def reservation_period(reservation):
+    try:
+        start_date = datetime.strptime(reservation.pickup_date, "%Y-%m-%d").date()
+        days = max(int(reservation.days), 1)
+    except (TypeError, ValueError):
+        return None
+    return start_date, start_date + timedelta(days=days)
 
+
+def find_reservation_conflict(van_name, start_date, days, exclude_reservation_id=None):
+    new_end_date = start_date + timedelta(days=days)
+    approved_reservations = Reservation.query.filter_by(
+        vans=van_name,
+        status="Approved",
+    ).all()
+
+    for reservation in approved_reservations:
+        if reservation.id == exclude_reservation_id:
+            continue
+        period = reservation_period(reservation)
+        if period is None:
+            continue
+        booked_start, booked_end = period
+        if start_date < booked_end and booked_start < new_end_date:
+            return reservation
+    return None
+
+
+def get_van_display_status(van, reservations, today=None):
+    if van.status != "Available":
+        return "Not Available"
+
+    today = today or datetime.now(BUSINESS_TIMEZONE).date()
+    reserved_through = today + timedelta(days=3)
+    for reservation in reservations:
+        if reservation.vans != van.name or reservation.status != "Approved":
+            continue
+        period = reservation_period(reservation)
+        if period is None:
+            continue
+        booked_start, booked_end = period
+        if booked_start <= reserved_through and booked_end > today:
+            return "Not Available"
+    return "Available"
 
 
 UPLOAD_FOLDER = "static/uploads"
@@ -256,12 +301,30 @@ def vans_list():
     ).all()
     reservations_by_van = {}
     for reservation in approved_reservations:
-        reservations_by_van.setdefault(reservation.vans, []).append(reservation)
+        period = reservation_period(reservation)
+        if period is None:
+            continue
+        start_date, end_date = period
+        if end_date <= datetime.now(BUSINESS_TIMEZONE).date():
+            continue
+        reservations_by_van.setdefault(reservation.vans, []).append(
+            {
+                "start_date": start_date.isoformat(),
+                "last_reserved_date": (end_date - timedelta(days=1)).isoformat(),
+                "pickup_time": reservation.pickup_time,
+                "days": reservation.days,
+            }
+        )
+    van_statuses = {
+        van.id: get_van_display_status(van, approved_reservations)
+        for van in all_vans
+    }
 
     return render_template(
         "vans_list.html",
         vans=all_vans,
         reservations_by_van=reservations_by_van,
+        van_statuses=van_statuses,
     )
 
 
@@ -329,6 +392,22 @@ def upload_tour_receipt():
 def rental():
     available_vans = Van.query.filter_by(status="Available").all()
     all_rates = DestinationRate.query.all()
+    approved_reservations = Reservation.query.filter_by(status="Approved").all()
+    schedules_by_van = {}
+    for reservation in approved_reservations:
+        period = reservation_period(reservation)
+        if period is None:
+            continue
+        start_date, end_date = period
+        if end_date <= datetime.now(BUSINESS_TIMEZONE).date():
+            continue
+        schedules_by_van.setdefault(reservation.vans, []).append(
+            {
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat(),
+                "time": reservation.pickup_time or "",
+            }
+        )
 
     if request.method == "POST":
         name = request.form.get("name")
@@ -344,6 +423,40 @@ def rental():
         dropoff = request.form.get("dropoff")
         days = request.form.get("days")
         nights = request.form.get("nights")
+
+        selected_van = next(
+            (van for van in available_vans if van.name == vans),
+            None,
+        )
+        try:
+            requested_start = datetime.strptime(pickup_date, "%Y-%m-%d").date()
+            rental_days = int(days)
+            if rental_days < 1:
+                raise ValueError
+        except (TypeError, ValueError):
+            requested_start = None
+            rental_days = 0
+
+        reservation_error = None
+        if selected_van is None:
+            reservation_error = "That van is not currently available for booking."
+        elif requested_start is None:
+            reservation_error = "Enter a valid pickup date and rental duration."
+        elif find_reservation_conflict(vans, requested_start, rental_days):
+            reservation_error = (
+                "This van is already reserved for one or more of your selected dates. "
+                "Please choose another van or date range."
+            )
+
+        if reservation_error:
+            return render_template(
+                "rental.html",
+                success=False,
+                vans_list=available_vans,
+                rates=all_rates,
+                schedules_by_van=schedules_by_van,
+                reservation_error=reservation_error,
+            )
 
         file = request.files.get("receipt")
         filename = ""
@@ -370,11 +483,19 @@ def rental():
         db.session.commit()
 
         return render_template(
-            "rental.html", success=True, vans_list=available_vans, rates=all_rates
+            "rental.html",
+            success=True,
+            vans_list=available_vans,
+            rates=all_rates,
+            schedules_by_van=schedules_by_van,
         )
 
     return render_template(
-        "rental.html", success=False, vans_list=available_vans, rates=all_rates
+        "rental.html",
+        success=False,
+        vans_list=available_vans,
+        rates=all_rates,
+        schedules_by_van=schedules_by_van,
     )
 
 
@@ -480,6 +601,10 @@ def admin_dashboard():
     all_franchise_apps = FranchiseApplication.query.all()
     all_tour_apps = TourApplication.query.all()
     all_gcash_payments = GCashPayment.query.all()
+    van_statuses = {
+        van.id: get_van_display_status(van, all_reservations)
+        for van in all_vans
+    }
     return render_template(
         "admin_dashboard.html",
         reservations=all_reservations,
@@ -489,6 +614,7 @@ def admin_dashboard():
         franchise_apps=all_franchise_apps,
         tour_apps=all_tour_apps,
         gcash_payments=all_gcash_payments,
+        van_statuses=van_statuses,
     )
 
 
@@ -498,6 +624,22 @@ def approve_reservation(res_id):
         return redirect(url_for("admin_login"))
     reservation = Reservation.query.get(res_id)
     if reservation:
+        period = reservation_period(reservation)
+        if period is not None:
+            start_date, end_date = period
+            conflict = find_reservation_conflict(
+                reservation.vans,
+                start_date,
+                (end_date - start_date).days,
+                exclude_reservation_id=reservation.id,
+            )
+            if conflict:
+                flash(
+                    "This reservation overlaps an already approved booking for the same van. "
+                    "Update its van or schedule before approving.",
+                    "error",
+                )
+                return redirect(url_for("admin_dashboard"))
         reservation.status = "Approved"
         db.session.commit()
     return redirect(url_for("admin_dashboard"))
