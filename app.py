@@ -671,6 +671,56 @@ def update_reservation_schedule(res_id):
     return redirect(url_for("admin_dashboard"))
 
 
+@app.route("/admin/reservation/<int:res_id>/delete", methods=["POST"])
+def delete_reservation(res_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    reservation = db.session.get(Reservation, res_id)
+    if reservation is None:
+        flash("Reservation not found.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    reservation_name = reservation.name
+    van_name = reservation.vans
+    db.session.delete(reservation)
+    db.session.commit()
+    flash(
+        f"Deleted {reservation_name}'s reservation for {van_name}.",
+        "success",
+    )
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/van/<int:van_id>/reservations/delete", methods=["POST"])
+def delete_van_reservations(van_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    van = db.session.get(Van, van_id)
+    if van is None:
+        flash("Van not found.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    if Van.query.filter_by(name=van.name).count() > 1:
+        flash(
+            "Reservations cannot be safely cleared because multiple vans share "
+            "this name. Give each van a unique name first.",
+            "error",
+        )
+        return redirect(url_for("admin_dashboard"))
+
+    deleted_count = Reservation.query.filter_by(vans=van.name).delete(
+        synchronize_session=False
+    )
+    db.session.commit()
+    flash(
+        f"Deleted {deleted_count} reservation(s) for {van.name}.",
+        "success" if deleted_count else "info",
+    )
+    return redirect(url_for("admin_dashboard"))
+
+
 @app.route("/admin/franchise/approve/<int:app_id>", methods=["POST"])
 def approve_franchise(app_id):
     if not session.get("logged_in"):
