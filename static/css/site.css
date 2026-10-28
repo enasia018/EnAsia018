@@ -151,6 +151,33 @@ body label {
     color: #fff !important;
 }
 
+.rental-page .van-booking-schedule {
+    color: var(--ink);
+    font-size: .85rem;
+    margin: -8px 0 14px;
+}
+
+.rental-page .van-booking-schedule ul {
+    margin: 4px 0 0;
+    padding-left: 20px;
+}
+
+.rental-page .van-availability-message {
+    background: #fbeeed;
+    border: 1px solid #edc5c1;
+    border-radius: 10px;
+    color: #9b342e;
+    font-size: .9rem;
+    margin: 8px 0 14px;
+    padding: 11px 14px;
+}
+
+.rental-page #reservationSubmit:disabled {
+    cursor: not-allowed;
+    opacity: .6;
+    transform: none;
+}
+
 body .success-msg,
 body .success-box {
     background: #eaf5ed !important;
