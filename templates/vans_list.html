@@ -29,8 +29,34 @@
             margin: 10px 0;
             padding: 10px;
             border-radius: 5px;
+            text-align: left;
+        }
+        .van-summary {
+            align-items: center;
             display: flex;
             justify-content: space-between;
+        }
+        .van-reservations {
+            border-top: 1px solid #dce5de;
+            margin-top: 12px;
+            padding-top: 10px;
+        }
+        .van-reservations h3 {
+            font-size: .9rem;
+            margin: 0 0 8px;
+        }
+        .van-reservation {
+            background: #eaf3ed;
+            border-radius: 8px;
+            color: #18332d;
+            font-size: .88rem;
+            margin-top: 6px;
+            padding: 9px 11px;
+        }
+        .van-reservations-empty {
+            color: #66766e;
+            font-size: .85rem;
+            margin: 8px 0 0;
         }
     </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
@@ -41,12 +67,29 @@
         <ul>
             {% for van in vans %}
                 <li>
-                    <span>{{ van.name }}</span>
-                    {% if van.status == 'Available' %}
-                        <span style="color: #4CAF50; font-weight: bold;">Available</span>
-                    {% else %}
-                        <span style="color: #ff4d4d; font-weight: bold;">Reserved</span>
-                    {% endif %}
+                    <div class="van-summary">
+                        <strong>{{ van.name }}</strong>
+                        {% if van.status == 'Available' %}
+                            <span style="color: #4CAF50; font-weight: bold;">Available</span>
+                        {% else %}
+                            <span style="color: #ff4d4d; font-weight: bold;">Reserved</span>
+                        {% endif %}
+                    </div>
+                    {% set van_reservations = reservations_by_van.get(van.name, []) %}
+                    <div class="van-reservations">
+                        <h3>Approved reservation schedule</h3>
+                        {% if van_reservations %}
+                            {% for reservation in van_reservations %}
+                                <div class="van-reservation">
+                                    <strong>{{ reservation.pickup_date or 'Date not set' }}</strong>
+                                    at {{ reservation.pickup_time or 'Time not set' }}
+                                    {% if reservation.days %} · {{ reservation.days }} day(s){% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="van-reservations-empty">No approved reservations scheduled.</p>
+                        {% endif %}
+                    </div>
                 </li>
             {% endfor %}
         </ul>
