@@ -188,7 +188,7 @@
                     </form>
                 </td>
                 <td>
-                    {% if van.status == 'Available' %}
+                    {% if van_statuses[van.id] == 'Available' %}
                         <span style="color: #4CAF50; font-weight: bold;">Available</span>
                     {% else %}
                         <span style="color: #ff4d4d; font-weight: bold;">Not Available</span>

@@ -69,7 +69,7 @@
                 <li>
                     <div class="van-summary">
                         <strong>{{ van.name }}</strong>
-                        {% if van.status == 'Available' %}
+                        {% if van_statuses[van.id] == 'Available' %}
                             <span style="color: #4CAF50; font-weight: bold;">Available</span>
                         {% else %}
                             <span style="color: #ff4d4d; font-weight: bold;">Reserved</span>
@@ -81,9 +81,8 @@
                         {% if van_reservations %}
                             {% for reservation in van_reservations %}
                                 <div class="van-reservation">
-                                    <strong>{{ reservation.pickup_date or 'Date not set' }}</strong>
-                                    at {{ reservation.pickup_time or 'Time not set' }}
-                                    {% if reservation.days %} · {{ reservation.days }} day(s){% endif %}
+                                    <strong>Not available: {{ reservation.start_date }} to {{ reservation.last_reserved_date }}</strong>
+                                    Pickup time: {{ reservation.pickup_time or 'Not set' }}
                                 </div>
                             {% endfor %}
                         {% else %}

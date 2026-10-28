@@ -76,7 +76,7 @@
             background-color: #777;
         }
     </style>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=4) }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=5) }}">
     </head>
     <body class="rental-page">
 
@@ -97,11 +97,17 @@
         <input type="text" name="contact" required>
 
         <label>Select Van:</label>
-        <select name="vans" required>
+        <select name="vans" id="vanSelect" required>
             {% for van in vans_list %}
-                <option value="{{ van.name }}">{{ van.name }} (Plate: {{ van.plate_number }})</option>
+                <option value="{{ van.name }}" data-bookings='{{ schedules_by_van.get(van.name, []) | tojson | forceescape }}'>{{ van.name }} (Plate: {{ van.plate_number }})</option>
             {% endfor %}
         </select>
+        <div id="vanBookingSchedule" class="van-booking-schedule" aria-live="polite"></div>
+        <p id="vanAvailabilityMessage" class="van-availability-message" role="alert" hidden></p>
+
+        {% if reservation_error %}
+            <p class="van-availability-message" role="alert">{{ reservation_error }}</p>
+        {% endif %}
 
         <label>Destination & Rate:</label>
         <select name="destination" id="destination" required>
@@ -126,10 +132,10 @@
         </div>
 
         <label>Number of Days:</label>
-        <input type="number" name="days" id="days" value="1" min="1" required oninput="calculateQuote()">
+        <input type="number" name="days" id="days" value="1" min="1" required oninput="calculateQuote(); validateVanAvailability()">
 
         <label>Pickup Date:</label>
-        <input type="date" name="pickup_date" required>
+        <input type="date" name="pickup_date" id="pickupDate" required>
 
         <label>Pickup Time:</label>
         <input type="time" name="pickup_time" required>
@@ -146,7 +152,7 @@
         <label>Upload Payment Receipt (GCash):</label>
         <input type="file" name="receipt">
 
-        <button type="submit">Submit Reservation</button>
+        <button type="submit" id="reservationSubmit">Submit Reservation</button>
     </form>
 
     <div class="quote-box">
@@ -160,6 +166,68 @@
     </div>
 
     <script>
+        function addDaysToDate(dateString, days) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            const date = new Date(Date.UTC(year, month - 1, day + days));
+            return date.toISOString().slice(0, 10);
+        }
+
+        function updateVanBookingSchedule() {
+            const vanSelect = document.getElementById('vanSelect');
+            const selectedOption = vanSelect.options[vanSelect.selectedIndex];
+            const schedule = document.getElementById('vanBookingSchedule');
+            schedule.replaceChildren();
+
+            if (!selectedOption) {
+                return;
+            }
+
+            const bookings = JSON.parse(selectedOption.dataset.bookings || '[]');
+            if (bookings.length === 0) {
+                return;
+            }
+
+            const heading = document.createElement('strong');
+            heading.textContent = 'Already reserved:';
+            const list = document.createElement('ul');
+            bookings.forEach(booking => {
+                const item = document.createElement('li');
+                const lastBookedDay = addDaysToDate(booking.end, -1);
+                item.textContent = `${booking.start} to ${lastBookedDay}${booking.time ? ` at ${booking.time}` : ''} — not available on these dates`;
+                list.appendChild(item);
+            });
+            schedule.append(heading, list);
+        }
+
+        function validateVanAvailability() {
+            const vanSelect = document.getElementById('vanSelect');
+            const selectedOption = vanSelect.options[vanSelect.selectedIndex];
+            const pickupDate = document.getElementById('pickupDate').value;
+            const days = Number.parseInt(document.getElementById('days').value, 10);
+            const message = document.getElementById('vanAvailabilityMessage');
+            const submitButton = document.getElementById('reservationSubmit');
+
+            message.hidden = true;
+            submitButton.disabled = false;
+            if (!selectedOption || !pickupDate || !Number.isInteger(days) || days < 1) {
+                return true;
+            }
+
+            const requestedEnd = addDaysToDate(pickupDate, days);
+            const bookings = JSON.parse(selectedOption.dataset.bookings || '[]');
+            const hasConflict = bookings.some(booking =>
+                pickupDate < booking.end && booking.start < requestedEnd
+            );
+
+            if (hasConflict) {
+                message.textContent = 'Sorry, this van is already reserved for one or more of your selected dates. Please choose another van or date range.';
+                message.hidden = false;
+                submitButton.disabled = true;
+                return false;
+            }
+            return true;
+        }
+
         function handleDestinationChange() {
             const isCustomDestination = document.getElementById('destination').value === '__other__';
             const otherDestinationGroup = document.getElementById('otherDestinationGroup');
@@ -202,6 +270,17 @@
         }
 
         document.getElementById('destination').addEventListener('change', handleDestinationChange);
+        document.getElementById('vanSelect').addEventListener('change', () => {
+            updateVanBookingSchedule();
+            validateVanAvailability();
+        });
+        document.getElementById('pickupDate').addEventListener('input', validateVanAvailability);
+        document.querySelector('form').addEventListener('submit', event => {
+            if (!validateVanAvailability()) {
+                event.preventDefault();
+            }
+        });
+        updateVanBookingSchedule();
         calculateQuote();
     </script>
 
