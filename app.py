@@ -431,17 +431,21 @@ def rental():
         try:
             requested_start = datetime.strptime(pickup_date, "%Y-%m-%d").date()
             rental_days = int(days)
-            if rental_days < 1:
+            rental_nights = int(nights)
+            if rental_days < 2 or rental_nights < 1:
                 raise ValueError
         except (TypeError, ValueError):
             requested_start = None
             rental_days = 0
+            rental_nights = 0
 
         reservation_error = None
         if selected_van is None:
             reservation_error = "That van is not currently available for booking."
         elif requested_start is None:
-            reservation_error = "Enter a valid pickup date and rental duration."
+            reservation_error = (
+                "Enter a valid pickup date and book for at least 2 days and 1 night."
+            )
         elif find_reservation_conflict(vans, requested_start, rental_days):
             reservation_error = (
                 "This van is already reserved for one or more of your selected dates. "
@@ -887,7 +891,4 @@ def admin_logout():
 
 
 if __name__ == "__main__":
-    # Listen on all interfaces so SnapDeploy's gateway can reach Flask.
-    # Use the port assigned by the host, falling back to 5000 for local use.
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(debug=True)
