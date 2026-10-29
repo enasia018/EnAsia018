@@ -109,7 +109,7 @@
             <p class="van-availability-message" role="alert">{{ reservation_error }}</p>
         {% endif %}
 
-        <label>Destination & Rate:</label>
+        <label>Destination & Base Rate (first 2 days):</label>
         <select name="destination" id="destination" required>
             <option value="" data-rate="0">-- Select Destination --</option>
             {% for rate in rates %}
@@ -120,7 +120,7 @@
                     {% else %}
                         ₱{{ '{:,.2f}'.format(rate.rate_per_day) }}
                     {% endif %}
-                    per day
+                    for first 2 days
                 </option>
             {% endfor %}
             <option value="__other__" data-rate="0">Destination is not in the list</option>
@@ -131,8 +131,8 @@
             <input type="text" name="other_destination" id="otherDestination" maxlength="200" placeholder="Type your destination">
         </div>
 
-        <label>Number of Days:</label>
-        <input type="number" name="days" id="days" value="1" min="1" required oninput="calculateQuote(); validateVanAvailability()">
+        <label>Number of Days (minimum 2):</label>
+        <input type="number" name="days" id="days" value="2" min="2" required oninput="calculateQuote(); validateVanAvailability()">
 
         <label>Pickup Date:</label>
         <input type="date" name="pickup_date" id="pickupDate" required>
@@ -140,8 +140,8 @@
         <label>Pickup Time:</label>
         <input type="time" name="pickup_time" required>
 
-        <label>Number of Nights:</label>
-        <input type="text" name="nights">
+        <label>Number of Nights (minimum 1):</label>
+        <input type="number" name="nights" min="1" value="1" required>
 
         <label for="pickupLocation">Pickup Location (type your pickup place):</label>
         <input type="text" name="pickup" id="pickupLocation" required>
@@ -157,8 +157,14 @@
 
     <div class="quote-box">
         <h3 id="estimatedQuote">Estimated Quote: <span id="totalQuote" style="color: #4CAF50;">₱0.00</span></h3>
-        <p id="discountQuote" class="discount-quote" hidden>For bookings of 3 days or more, we’ll send you a discounted price.</p>
+        <p class="discount-quote">The destination rate covers the first 2 days. Each additional day adds ₱3,000.</p>
         <p id="customDestinationQuote" class="discount-quote" hidden>We’ll contact you at the cellphone number you provide after you submit your reservation.</p>
+    </div>
+
+    <div class="quote-box">
+        <h3>Need a 1-day van rental or a day tour?</h3>
+        <p>Please send us a message and include your contact number. Wait for our admin to contact you.</p>
+        <a class="btn-home" href="https://m.me/enasiadz8" target="_blank" rel="noopener noreferrer">Send a Message</a>
     </div>
 
     <div style="text-align: center;">
@@ -209,7 +215,7 @@
 
             message.hidden = true;
             submitButton.disabled = false;
-            if (!selectedOption || !pickupDate || !Number.isInteger(days) || days < 1) {
+            if (!selectedOption || !pickupDate || !Number.isInteger(days) || days < 2) {
                 return true;
             }
 
@@ -241,32 +247,30 @@
         function calculateQuote() {
             const destinationSelect = document.getElementById('destination');
             const selectedOption = destinationSelect.options[destinationSelect.selectedIndex];
-            const ratePerDay = parseFloat(selectedOption.getAttribute('data-rate')) || 0;
+            const baseRate = parseFloat(selectedOption.getAttribute('data-rate')) || 0;
             const days = parseInt(document.getElementById('days').value) || 0;
             const estimatedQuote = document.getElementById('estimatedQuote');
-            const discountQuote = document.getElementById('discountQuote');
             const customDestinationQuote = document.getElementById('customDestinationQuote');
 
             if (destinationSelect.value === '__other__') {
                 estimatedQuote.hidden = true;
-                discountQuote.hidden = true;
                 customDestinationQuote.hidden = false;
                 return;
             }
 
-            if (days >= 3) {
+            customDestinationQuote.hidden = true;
+            if (days < 2) {
                 estimatedQuote.hidden = true;
-                discountQuote.hidden = false;
-                customDestinationQuote.hidden = true;
                 return;
             }
 
             estimatedQuote.hidden = false;
-            discountQuote.hidden = true;
-            customDestinationQuote.hidden = true;
-            const total = ratePerDay * days;
+            const total = baseRate + Math.max(days - 2, 0) * 3000;
 
-            document.getElementById('totalQuote').innerText = '₱' + total.toLocaleString();
+            document.getElementById('totalQuote').innerText = '₱' + total.toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
         }
 
         document.getElementById('destination').addEventListener('change', handleDestinationChange);
