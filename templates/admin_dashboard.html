@@ -84,133 +84,116 @@
             border: none;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=5) }}">
 </head>
 <body class="admin-page">
 
-    <a href="{{ url_for('admin_logout') }}" class="btn-logout">Logout</a>
-    <h2>Admin Dashboard</h2>
+    <header class="admin-header">
+        <div>
+            <h2>Admin Dashboard</h2>
+            <p class="admin-intro">Manage reservations, vehicles, rates, and applications.</p>
+        </div>
+        <a href="{{ url_for('admin_logout') }}" class="btn-logout">Logout</a>
+    </header>
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
             <div class="admin-notice admin-notice-{{ category }}" role="status">{{ message }}</div>
         {% endfor %}
     {% endwith %}
 
-    <!-- Form to add a new Van -->
-    <div class="form-box">
-        <h4>Add New Van</h4>
-        <form action="{{ url_for('add_van') }}" method="POST">
-            <input type="text" name="van_name" placeholder="Van Name" required><br>
-            <input type="text" name="plate_number" placeholder="Plate Number"><br>
-            <input type="text" name="driver_name" placeholder="Driver Name"><br>
-            <button type="submit" class="btn-add">Add Van</button>
-        </form>
-    </div>
-
-    <!-- Form to add Pick-up & Destination Rate -->
-    <div class="form-box" style="margin-left: 20px;">
-        <h4>Add Pick-up & Destination Rate</h4>
-        <form action="{{ url_for('add_rate') }}" method="POST">
-            <input type="text" name="pickup_location" placeholder="Pick-up Location" required><br>
-            <input type="text" name="destination" placeholder="Destination Name" required><br>
-            <input type="text" name="rate_per_day" placeholder="Base rate (2 days, ₱)" required><br>
-            <button type="submit" class="btn-add">Add Rate</button>
-        </form>
-    </div>
-
-    <!-- Form to add a new Franchise Option -->
-    <div class="form-box" style="margin-left: 20px;">
-        <h4>Add Franchise Option</h4>
-        <form action="{{ url_for('add_franchise_option') }}" method="POST">
-            <input type="text" name="title" placeholder="Option Title" required><br>
-            <input type="text" name="details" placeholder="Option Details" required><br>
-            <button type="submit" class="btn-add">Add Option</button>
-        </form>
-    </div>
-
     <!-- Section 1: Van Management -->
     <h3>Van List and Availability</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Van Details & Update</th>
-                <th>Availability</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for van in vans %}
-            <tr>
-                <td>{{ van.id }}</td>
-                <td>
-                    <form action="{{ url_for('edit_van', van_id=van.id) }}" method="POST" style="display:inline;">
-                        <input type="text" name="van_name" value="{{ van.name }}" required style="background:#333; color:#fff; border:1px solid #555; width: 110px;">
-                        <input type="text" name="plate_number" value="{{ van.plate_number or '' }}" placeholder="Plate" style="background:#333; color:#fff; border:1px solid #555; width: 90px;">
-                        <input type="text" name="driver_name" value="{{ van.driver_name or '' }}" placeholder="Driver" style="background:#333; color:#fff; border:1px solid #555; width: 100px;">
-                        <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update</button>
-                    </form>
-                </td>
-                <td>
-                    {% set van_reservations = reservations | selectattr('vans', 'equalto', van.name) | list %}
-                    {% if van_reservations %}
-                        <div class="van-booking-list">
-                            {% for booking in van_reservations %}
-                                <div class="van-booking">
-                                    <strong>{{ booking.name }}</strong>
-                                    <span>{{ booking.pickup_date or 'Date not set' }} · {{ booking.pickup_time or 'Time not set' }}</span>
-                                    <small>{{ booking.status }}</small>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <span class="van-no-bookings">No linked reservations</span>
-                    {% endif %}
+    <div class="van-table-wrap">
+        <table class="van-table">
+            <colgroup>
+                <col class="van-column-id">
+                <col class="van-column-details">
+                <col class="van-column-availability">
+                <col class="van-column-status">
+                <col class="van-column-action">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Van Details & Update</th>
+                    <th>Availability</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for van in vans %}
+                <tr>
+                    <td>{{ van.id }}</td>
+                    <td>
+                        <form action="{{ url_for('edit_van', van_id=van.id) }}" method="POST" class="van-edit-form">
+                            <input type="text" name="van_name" value="{{ van.name }}" required>
+                            <input type="text" name="plate_number" value="{{ van.plate_number or '' }}" placeholder="Plate">
+                            <input type="text" name="driver_name" value="{{ van.driver_name or '' }}" placeholder="Driver">
+                            <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update</button>
+                        </form>
+                    </td>
+                    <td>
+                        {% set van_reservations = reservations | selectattr('vans', 'equalto', van.name) | list %}
+                        {% if van_reservations %}
+                            <div class="van-booking-list">
+                                {% for booking in van_reservations %}
+                                    <div class="van-booking">
+                                        <strong>{{ booking.name }}</strong>
+                                        <span>{{ booking.pickup_date or 'Date not set' }} · {{ booking.pickup_time or 'Time not set' }}</span>
+                                        <small>{{ booking.status }}</small>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span class="van-no-bookings">No linked reservations</span>
+                        {% endif %}
 
-                    <form action="{{ url_for('delete_van_reservations', van_id=van.id) }}" method="POST" style="margin: 10px 0;">
-                        <button type="submit" class="btn-delete" style="border: none; cursor: pointer;" onclick="return confirm('Permanently delete ALL reservations for this van? This cannot be undone.');">
-                            Delete All Reservations for This Van
-                        </button>
-                    </form>
+                        <form action="{{ url_for('delete_van_reservations', van_id=van.id) }}" method="POST" style="margin: 10px 0;">
+                            <button type="submit" class="btn-delete" style="border: none; cursor: pointer;" onclick="return confirm('Permanently delete ALL reservations for this van? This cannot be undone.');">
+                                Delete All Reservations for This Van
+                            </button>
+                        </form>
 
-                    <form action="{{ url_for('update_van_schedule', van_id=van.id) }}" method="POST" class="van-schedule-form">
-                        <strong>Manual schedule / note</strong>
-                        <div class="van-schedule-fields">
+                        <form action="{{ url_for('update_van_schedule', van_id=van.id) }}" method="POST" class="van-schedule-form">
+                            <strong>Manual schedule / note</strong>
+                            <div class="van-schedule-fields">
+                                <label>
+                                    Date
+                                    <input type="date" name="schedule_date" value="{{ van.schedule_date or '' }}">
+                                </label>
+                                <label>
+                                    Time
+                                    <input type="time" name="schedule_time" value="{{ van.schedule_time or '' }}">
+                                </label>
+                            </div>
                             <label>
-                                Date
-                                <input type="date" name="schedule_date" value="{{ van.schedule_date or '' }}">
+                                Note
+                                <textarea name="schedule_note" maxlength="500" rows="2" placeholder="Add a manual schedule note">{{ van.schedule_note or '' }}</textarea>
                             </label>
-                            <label>
-                                Time
-                                <input type="time" name="schedule_time" value="{{ van.schedule_time or '' }}">
-                            </label>
-                        </div>
-                        <label>
-                            Note
-                            <textarea name="schedule_note" maxlength="500" rows="2" placeholder="Add a manual schedule note">{{ van.schedule_note or '' }}</textarea>
-                        </label>
-                        <button type="submit" class="btn-add">Save Van Schedule</button>
-                    </form>
-                </td>
-                <td>
-                    {% if van_statuses[van.id] == 'Available' %}
-                        <span style="color: #4CAF50; font-weight: bold;">Available</span>
-                    {% else %}
-                        <span style="color: #ff4d4d; font-weight: bold;">Not Available</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="{{ url_for('toggle_van_status', van_id=van.id) }}" class="btn-toggle">Change Status</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                            <button type="submit" class="btn-add">Save Van Schedule</button>
+                        </form>
+                    </td>
+                    <td>
+                        {% if van_statuses[van.id] == 'Available' %}
+                            <span style="color: #4CAF50; font-weight: bold;">Available</span>
+                        {% else %}
+                            <span style="color: #ff4d4d; font-weight: bold;">Not Available</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('toggle_van_status', van_id=van.id) }}" class="btn-toggle">Change Status</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     <!-- Section 2: Destination Rates Management -->
     <h3>Pick-up & Destination Rates Management</h3>
-    <table>
+    <div class="admin-table-wrap">
+    <table class="admin-data-table">
         <thead>
             <tr>
                 <th>ID</th>
@@ -233,10 +216,12 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 
     <!-- Section 3: Franchise Options Management -->
     <h3>Franchise Options Management</h3>
-    <table>
+    <div class="admin-table-wrap">
+    <table class="admin-data-table">
         <thead>
             <tr>
                 <th>ID</th>
@@ -258,10 +243,12 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 
     <!-- Section 4: Franchise Applications Management -->
     <h3>Franchise Applications (Option 1 & 2)</h3>
-    <table>
+    <div class="admin-table-wrap">
+    <table class="admin-data-table">
         <thead>
             <tr>
                 <th>ID</th>
@@ -311,10 +298,12 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 
     <!-- Section 5: Tour Applications Management -->
     <h3>Tour Applications & Payment Receipts</h3>
-    <table>
+    <div class="admin-table-wrap">
+    <table class="admin-data-table">
         <thead>
             <tr>
                 <th>ID</th>
@@ -355,10 +344,12 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 
     <!-- Section 6: GCash Payments Management -->
     <h3>GCash Payment</h3>
-    <table>
+    <div class="admin-table-wrap">
+    <table class="admin-data-table">
         <thead>
             <tr>
                 <th>ID</th>
@@ -386,10 +377,12 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 
     <!-- Section 7: Reservation Management -->
     <h3>Reservation List</h3>
-    <table>
+    <div class="admin-table-wrap">
+    <table class="admin-data-table">
         <thead>
             <tr>
                 <th>ID</th>
@@ -448,6 +441,39 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
+
+    <h3 class="admin-tools-heading">Add items</h3>
+    <section class="admin-tools" aria-label="Add vehicles, rates, and franchise options">
+        <div class="form-box">
+            <h4>Add New Van</h4>
+            <form action="{{ url_for('add_van') }}" method="POST">
+                <input type="text" name="van_name" placeholder="Van Name" required><br>
+                <input type="text" name="plate_number" placeholder="Plate Number"><br>
+                <input type="text" name="driver_name" placeholder="Driver Name"><br>
+                <button type="submit" class="btn-add">Add Van</button>
+            </form>
+        </div>
+
+        <div class="form-box">
+            <h4>Add Pick-up & Destination Rate</h4>
+            <form action="{{ url_for('add_rate') }}" method="POST">
+                <input type="text" name="pickup_location" placeholder="Pick-up Location" required><br>
+                <input type="text" name="destination" placeholder="Destination Name" required><br>
+                <input type="text" name="rate_per_day" placeholder="Base rate (2 days, ₱)" required><br>
+                <button type="submit" class="btn-add">Add Rate</button>
+            </form>
+        </div>
+
+        <div class="form-box">
+            <h4>Add Franchise Option</h4>
+            <form action="{{ url_for('add_franchise_option') }}" method="POST">
+                <input type="text" name="title" placeholder="Option Title" required><br>
+                <input type="text" name="details" placeholder="Option Details" required><br>
+                <button type="submit" class="btn-add">Add Option</button>
+            </form>
+        </div>
+    </section>
 
 </body>
 </html>

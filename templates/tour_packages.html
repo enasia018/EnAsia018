@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fbfaf7">
+    <title>Tour Packages | EnAsia Tourist Transport</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=5) }}">
+</head>
+<body class="tour-selection-page">
+    <main class="tour-selection">
+        <a class="tour-back-link" href="{{ url_for('home') }}">← Back to Home</a>
+        <header class="tour-selection-header">
+            <p class="tour-selection-eyebrow">Explore with EnAsia</p>
+            <h1>Choose Your Tour Package</h1>
+            <p>Pick a destination to view its tour details and photos.</p>
+        </header>
+
+        <div class="tour-package-list">
+            <a class="tour-package-card tour-package-card-available"
+               href="{{ url_for('tour_package_detail', package_slug='casiguran-aurora-casapsapan-beach') }}">
+                <span class="tour-package-number">01</span>
+                <span class="tour-package-copy">
+                    <strong>Casiguran Aurora x Casapsapan Beach</strong>
+                    <small>High Roof Van · 2 days, 1 night</small>
+                </span>
+                <span class="tour-package-status">View package <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="tour-package-card"
+               href="{{ url_for('tour_package_detail', package_slug='baguio') }}">
+                <span class="tour-package-number">02</span>
+                <span class="tour-package-copy">
+                    <strong>Baguio</strong>
+                    <small>Tour details coming soon</small>
+                </span>
+                <span class="tour-package-status">Coming soon <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="tour-package-card"
+               href="{{ url_for('tour_package_detail', package_slug='ilocos') }}">
+                <span class="tour-package-number">03</span>
+                <span class="tour-package-copy">
+                    <strong>Ilocos</strong>
+                    <small>Tour details coming soon</small>
+                </span>
+                <span class="tour-package-status">Coming soon <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="tour-package-card"
+               href="{{ url_for('tour_package_detail', package_slug='la-union') }}">
+                <span class="tour-package-number">04</span>
+                <span class="tour-package-copy">
+                    <strong>La Union</strong>
+                    <small>Tour details coming soon</small>
+                </span>
+                <span class="tour-package-status">Coming soon <span aria-hidden="true">→</span></span>
+            </a>
+        </div>
+    </main>
+</body>
+</html>

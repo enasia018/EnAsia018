@@ -538,6 +538,168 @@ body.home-page {
     gap: 10px;
 }
 
+.tour-selection-page,
+.tour-coming-soon-page {
+    background:
+        radial-gradient(ellipse at 92% 8%, rgba(233, 168, 59, .12), transparent 28rem),
+        var(--sand) !important;
+    min-height: 100vh;
+}
+
+.tour-selection {
+    margin: 0 auto;
+    max-width: 920px;
+    padding: clamp(8px, 2vw, 24px) 0;
+}
+
+.tour-back-link {
+    color: var(--pine);
+    display: inline-block;
+    font-size: .92rem;
+    font-weight: 700;
+    margin-bottom: 28px;
+    text-decoration: none;
+}
+
+.tour-back-link:hover {
+    color: var(--pine-dark);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.tour-selection-header {
+    margin-bottom: 28px;
+}
+
+.tour-selection-eyebrow {
+    color: var(--pine);
+    font-size: .76rem;
+    font-weight: 800;
+    letter-spacing: .13em;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+}
+
+.tour-selection-header h1,
+.tour-coming-soon h1 {
+    color: var(--ink) !important;
+    font-size: clamp(2rem, 5vw, 3rem);
+    letter-spacing: -.05em;
+    margin: 0;
+}
+
+.tour-selection-header > p:last-child {
+    margin: 10px 0 0;
+}
+
+.tour-package-list {
+    display: grid;
+    gap: 14px;
+}
+
+.tour-package-card {
+    align-items: center;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(24, 51, 45, .05);
+    color: var(--ink);
+    display: flex;
+    gap: 18px;
+    min-width: 0;
+    padding: 20px;
+    text-decoration: none;
+    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.tour-package-card:hover {
+    border-color: #b7cfc0;
+    box-shadow: 0 14px 32px rgba(24, 51, 45, .1);
+    color: var(--ink);
+    transform: translateY(-2px);
+}
+
+.tour-package-card-available {
+    border-color: #a8c8b3;
+}
+
+.tour-package-number {
+    align-items: center;
+    background: var(--mint);
+    border-radius: 50%;
+    color: var(--pine);
+    display: inline-flex;
+    flex: 0 0 48px;
+    font-size: .83rem;
+    font-weight: 800;
+    height: 48px;
+    justify-content: center;
+}
+
+.tour-package-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.tour-package-copy strong,
+.tour-package-copy small {
+    display: block;
+}
+
+.tour-package-copy strong {
+    font-size: 1.05rem;
+    line-height: 1.35;
+}
+
+.tour-package-copy small {
+    color: var(--muted);
+    font-size: .86rem;
+    margin-top: 4px;
+}
+
+.tour-package-status {
+    color: var(--pine);
+    flex: 0 0 auto;
+    font-size: .88rem;
+    font-weight: 750;
+}
+
+.tour-package-card:not(.tour-package-card-available) .tour-package-status {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.tour-coming-soon {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    margin: min(12vh, 100px) auto 0;
+    max-width: 680px;
+    padding: clamp(28px, 6vw, 58px);
+}
+
+.tour-coming-soon-badge {
+    background: #fff3da;
+    border: 1px solid #f0d7a7;
+    border-radius: 999px;
+    color: #825d1c;
+    display: inline-block;
+    font-size: .78rem;
+    font-weight: 750;
+    margin: 18px 0 12px;
+    padding: 6px 12px;
+}
+
+.tour-coming-soon > p:not(.tour-selection-eyebrow) {
+    font-size: 1rem;
+    margin: 12px 0 26px;
+}
+
+.tour-coming-soon .tour-back-link {
+    margin-bottom: 0;
+}
+
 .franchise-page .main-layout {
     align-items: stretch;
 }
@@ -559,8 +721,87 @@ body.home-page {
 }
 
 .admin-page {
-    margin: 0 auto !important;
-    max-width: 1600px;
+    margin: 0 !important;
+    max-width: none;
+    padding: 22px 10px !important;
+}
+
+.admin-page .admin-header {
+    align-items: center;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding: clamp(20px, 3vw, 30px);
+}
+
+.admin-page .admin-header h2 {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    margin: 0 !important;
+}
+
+.admin-page .admin-intro {
+    margin: 6px 0 0;
+}
+
+.admin-page .admin-header .btn-logout {
+    flex: 0 0 auto;
+    float: none;
+}
+
+.admin-page .van-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.admin-page .van-table {
+    display: table;
+    max-width: none;
+    min-width: 1200px;
+    overflow: visible;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.admin-page .van-column-id {
+    width: 3%;
+}
+
+.admin-page .van-column-details {
+    width: 25%;
+}
+
+.admin-page .van-column-availability {
+    width: 50%;
+}
+
+.admin-page .van-column-status {
+    width: 7%;
+}
+
+.admin-page .van-column-action {
+    width: 15%;
+}
+
+.admin-page .van-edit-form {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr);
+    max-width: none;
+}
+
+.admin-page .van-edit-form input {
+    min-width: 0;
+    width: 100% !important;
+}
+
+.admin-page .van-edit-form button {
+    justify-self: start;
+    white-space: nowrap;
 }
 
 .admin-page > h3 {
@@ -569,15 +810,58 @@ body.home-page {
     padding-bottom: 10px;
 }
 
+.admin-page .admin-tools-heading {
+    margin-top: 42px;
+}
+
+.admin-page .admin-tools {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    margin-bottom: 34px;
+}
+
 .admin-page .form-box {
-    display: inline-block;
-    margin: 0 12px 18px 0 !important;
-    vertical-align: top;
-    width: min(100%, 340px);
+    margin: 0 !important;
+    width: 100%;
+}
+
+.admin-page .form-box h4 {
+    margin: 0 0 12px;
 }
 
 .admin-page .form-box input {
     margin: 6px 0 10px !important;
+}
+
+.admin-page .admin-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    width: 100%;
+}
+
+.admin-page .admin-data-table {
+    display: table;
+    max-width: none;
+    min-width: 100%;
+    overflow: visible;
+    table-layout: auto;
+    width: 100% !important;
+}
+
+.admin-page tbody tr:hover td {
+    background: #f7faf7;
+}
+
+.admin-page td a:not(.btn-approve):not(.btn-delete):not(.btn-toggle) {
+    font-weight: 650;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+.admin-page .admin-notice {
+    position: relative;
+    z-index: 1;
 }
 
 .admin-page .schedule-form {
@@ -791,6 +1075,15 @@ body.home-page {
 }
 
 @media (max-width: 600px) {
+    .admin-page .admin-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-page .admin-intro {
+        font-size: .9rem;
+    }
+
     body {
         padding: 18px 14px !important;
     }
