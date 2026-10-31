@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fbfaf7">
+    <title>{{ package_title }} | EnAsia Tourist Transport</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=5) }}">
+</head>
+<body class="tour-coming-soon-page">
+    <main class="tour-coming-soon">
+        <p class="tour-selection-eyebrow">EnAsia Tour Packages</p>
+        <span class="tour-coming-soon-badge">Coming soon</span>
+        <h1>{{ package_title }}</h1>
+        <p>We’re preparing this tour package. Please check back soon for the itinerary, inclusions, and photos.</p>
+        <a class="tour-back-link" href="{{ url_for('tour_package') }}">← Browse all tour packages</a>
+    </main>
+</body>
+</html>

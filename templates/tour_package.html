@@ -100,7 +100,7 @@
             }
         }
     </style>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=5) }}">
     </head>
     <body class="tour-page">
 
@@ -209,7 +209,7 @@ ITINERARY:
 
             <div class="btn-container">
                 <a href="{{ url_for('tour_apply') }}" class="btn">Apply Tour Package</a>
-                <a href="{{ url_for('home') }}" class="btn" style="background-color: #555;">← Back to Home</a>
+                <a href="{{ url_for('tour_package') }}" class="btn" style="background-color: #555;">← All Tour Packages</a>
             </div>
         </div>
 
