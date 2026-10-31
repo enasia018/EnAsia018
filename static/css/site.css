@@ -706,6 +706,108 @@ body.home-page {
     margin-bottom: 0;
 }
 
+.tour-detail-page {
+    background:
+        radial-gradient(ellipse at 92% 8%, rgba(233, 168, 59, .12), transparent 28rem),
+        var(--sand) !important;
+    min-height: 100vh;
+}
+
+.tour-detail {
+    margin: 0 auto;
+    max-width: 920px;
+    padding: clamp(8px, 2vw, 24px) 0;
+}
+
+.tour-detail-header {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    padding: clamp(24px, 5vw, 42px);
+}
+
+.tour-detail-header h1 {
+    color: var(--ink) !important;
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    letter-spacing: -.05em;
+    margin: 0;
+}
+
+.tour-detail-subtitle {
+    color: var(--muted);
+    font-size: 1rem;
+    margin: 8px 0 0;
+}
+
+.tour-detail-section {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 8px 24px rgba(24, 51, 45, .05);
+    margin: 16px 0;
+    padding: clamp(20px, 4vw, 32px);
+}
+
+.tour-detail-section h2 {
+    color: var(--pine) !important;
+    font-size: 1.35rem;
+    margin: 0 0 18px;
+}
+
+.tour-itinerary-days {
+    display: grid;
+    gap: 14px;
+}
+
+.tour-itinerary-day {
+    background: #f7f8f5;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+}
+
+.tour-day-label {
+    color: var(--pine);
+    font-size: .77rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    margin: 0 0 5px;
+    text-transform: uppercase;
+}
+
+.tour-itinerary-day h3 {
+    color: var(--ink) !important;
+    font-size: 1.05rem;
+    margin: 0 0 10px;
+}
+
+.tour-itinerary-day > p:last-child {
+    margin: 0;
+}
+
+.tour-detail-list,
+.tour-itinerary-day ul {
+    color: var(--ink);
+    line-height: 1.8;
+    margin: 0;
+    padding-left: 22px;
+}
+
+.tour-notes {
+    background: #fffaf0;
+    border-color: #efdfbf;
+}
+
+.tour-notes h2 {
+    color: #825d1c !important;
+}
+
+.tour-detail-back-bottom {
+    margin: 12px 0 0;
+}
+
 .franchise-page .main-layout {
     align-items: stretch;
 }
