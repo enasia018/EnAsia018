@@ -559,8 +559,80 @@ body.home-page {
 }
 
 .admin-page {
+    isolation: isolate;
     margin: 0 auto !important;
     max-width: 1600px;
+    padding: clamp(18px, 3vw, 42px) !important;
+    position: relative;
+}
+
+.admin-page > :not(.admin-watermark) {
+    position: relative;
+    z-index: 1;
+}
+
+.admin-page .admin-watermark {
+    aspect-ratio: 1;
+    background: url("../images/logo.png") center / contain no-repeat;
+    bottom: 24px;
+    opacity: .055;
+    pointer-events: none;
+    position: fixed;
+    right: max(24px, calc((100vw - 1600px) / 2));
+    width: min(34vw, 380px);
+    z-index: 0;
+}
+
+.admin-page .admin-header {
+    align-items: center;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding: clamp(20px, 3vw, 30px);
+}
+
+.admin-page .admin-brand {
+    align-items: center;
+    display: flex;
+    gap: 18px;
+    min-width: 0;
+}
+
+.admin-page .admin-brand-logo {
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    flex: 0 0 68px;
+    height: 68px;
+    object-fit: cover;
+    width: 68px;
+}
+
+.admin-page .admin-eyebrow {
+    color: var(--pine);
+    font-size: .75rem;
+    font-weight: 800;
+    letter-spacing: .12em;
+    margin: 0 0 5px;
+    text-transform: uppercase;
+}
+
+.admin-page .admin-header h2 {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    margin: 0 !important;
+}
+
+.admin-page .admin-intro {
+    margin: 6px 0 0;
+}
+
+.admin-page .admin-header .btn-logout {
+    flex: 0 0 auto;
+    float: none;
 }
 
 .admin-page > h3 {
@@ -569,15 +641,47 @@ body.home-page {
     padding-bottom: 10px;
 }
 
+.admin-page .admin-tools-heading {
+    margin-top: 0;
+}
+
+.admin-page .admin-tools {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    margin-bottom: 34px;
+}
+
 .admin-page .form-box {
-    display: inline-block;
-    margin: 0 12px 18px 0 !important;
-    vertical-align: top;
-    width: min(100%, 340px);
+    margin: 0 !important;
+    width: 100%;
+}
+
+.admin-page .form-box h4 {
+    margin: 0 0 12px;
 }
 
 .admin-page .form-box input {
     margin: 6px 0 10px !important;
+}
+
+.admin-page table {
+    width: 100%;
+}
+
+.admin-page tbody tr:hover td {
+    background: #f7faf7;
+}
+
+.admin-page td a:not(.btn-approve):not(.btn-delete):not(.btn-toggle) {
+    font-weight: 650;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+.admin-page .admin-notice {
+    position: relative;
+    z-index: 1;
 }
 
 .admin-page .schedule-form {
@@ -791,6 +895,32 @@ body.home-page {
 }
 
 @media (max-width: 600px) {
+    .admin-page .admin-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-page .admin-brand {
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .admin-page .admin-brand-logo {
+        flex-basis: 48px;
+        height: 48px;
+        width: 48px;
+    }
+
+    .admin-page .admin-intro {
+        font-size: .9rem;
+    }
+
+    .admin-page .admin-watermark {
+        bottom: 12px;
+        right: 12px;
+        width: 48vw;
+    }
+
     body {
         padding: 18px 14px !important;
     }
