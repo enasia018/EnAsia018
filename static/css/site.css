@@ -675,14 +675,16 @@ body.home-page {
 .admin-page .admin-table-wrap {
     max-width: 100%;
     overflow-x: auto;
+    width: 100%;
 }
 
 .admin-page .admin-data-table {
     display: table;
     max-width: none;
+    min-width: 100%;
     overflow: visible;
     table-layout: auto;
-    width: 100%;
+    width: 100% !important;
 }
 
 .admin-page tbody tr:hover td {
