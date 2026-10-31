@@ -9,9 +9,6 @@
             font-family: Arial, sans-serif;
             background-color: #111;
             color: #fff;
-            padding: 20px;
-            max-width: 600px;
-            margin: auto;
         }
         h2 {
             color: #ff3333;
@@ -76,9 +73,10 @@
             background-color: #777;
         }
     </style>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=5) }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=6) }}">
     </head>
     <body class="rental-page">
+    <main class="rental-content">
 
     <h2>Book Your Van Rental</h2>
 
@@ -170,6 +168,7 @@
     <div style="text-align: center;">
         <a href="{{ url_for('home') }}" class="btn-home">← Back to Home Page</a>
     </div>
+    </main>
 
     <script>
         function addDaysToDate(dateString, days) {
