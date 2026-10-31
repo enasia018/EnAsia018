@@ -244,6 +244,12 @@ body.home-page {
     padding: 0 !important;
 }
 
+.rental-page .rental-content {
+    margin: 0 auto;
+    max-width: 720px;
+    width: 100%;
+}
+
 .home-page .site-header {
     align-items: center;
     background: rgba(251, 250, 247, .98);
