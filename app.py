@@ -331,7 +331,26 @@ def vans_list():
 
 @app.route("/tour-package")
 def tour_package():
-    return render_template("tour_package.html")
+    return render_template("tour_packages.html")
+
+
+@app.route("/tour-package/<package_slug>")
+def tour_package_detail(package_slug):
+    packages = {
+        "casiguran-aurora-casapsapan-beach": {
+            "title": "Casiguran Aurora x Casapsapan Beach (High Roof Van)",
+            "available": True,
+        },
+        "baguio": {"title": "Baguio", "available": False},
+        "ilocos": {"title": "Ilocos", "available": False},
+        "la-union": {"title": "La Union", "available": False},
+    }
+    package = packages.get(package_slug)
+    if package is None:
+        return "Tour package not found", 404
+    if package["available"]:
+        return render_template("tour_package.html")
+    return render_template("tour_package_coming_soon.html", package_title=package["title"])
 
 
 @app.route("/tour/apply", methods=["GET", "POST"])
