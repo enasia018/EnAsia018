@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#fbfaf7">
     <title>Tour Packages | EnAsia Tourist Transport</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=5) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=11) }}">
 </head>
 <body class="tour-selection-page">
     <main class="tour-selection">
@@ -32,9 +32,9 @@
                 <span class="tour-package-number">02</span>
                 <span class="tour-package-copy">
                     <strong>Baguio</strong>
-                    <small>Tour details coming soon</small>
+                    <small>2 days, 1 night</small>
                 </span>
-                <span class="tour-package-status">Coming soon <span aria-hidden="true">→</span></span>
+                <span class="tour-package-status">View package <span aria-hidden="true">→</span></span>
             </a>
 
             <a class="tour-package-card"
@@ -42,9 +42,9 @@
                 <span class="tour-package-number">03</span>
                 <span class="tour-package-copy">
                     <strong>Ilocos</strong>
-                    <small>Tour details coming soon</small>
+                    <small>Ilocos Sur + Ilocos Norte · 3 days, 2 nights</small>
                 </span>
-                <span class="tour-package-status">Coming soon <span aria-hidden="true">→</span></span>
+                <span class="tour-package-status">View package <span aria-hidden="true">→</span></span>
             </a>
 
             <a class="tour-package-card"
@@ -55,6 +55,46 @@
                     <small>Tour details coming soon</small>
                 </span>
                 <span class="tour-package-status">Coming soon <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="tour-package-card"
+               href="{{ url_for('tour_package_detail', package_slug='jomalig-island') }}">
+                <span class="tour-package-number">05</span>
+                <span class="tour-package-copy">
+                    <strong>Jomalig Island</strong>
+                    <small>Island escape · 3 days, 2 nights</small>
+                </span>
+                <span class="tour-package-status">View package <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="tour-package-card"
+               href="{{ url_for('tour_package_detail', package_slug='calayan') }}">
+                <span class="tour-package-number">06</span>
+                <span class="tour-package-copy">
+                    <strong>Calayan Island</strong>
+                    <small>Joiner and exclusive tours · 4 days, 3 nights</small>
+                </span>
+                <span class="tour-package-status">View package <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="tour-package-card"
+               href="{{ url_for('tour_package_detail', package_slug='kalanggaman-tacloban-matnog-albay') }}">
+                <span class="tour-package-number">07</span>
+                <span class="tour-package-copy">
+                    <strong>Kalanggaman, Tacloban, Pink Beach Matnog &amp; Albay</strong>
+                    <small>4 days, 3 nights</small>
+                </span>
+                <span class="tour-package-status">View package <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="tour-package-card"
+               href="{{ url_for('tour_package_detail', package_slug='burias-island') }}">
+                <span class="tour-package-number">08</span>
+                <span class="tour-package-copy">
+                    <strong>Burias Island</strong>
+                    <small>Island hopping · 2 days, 1 night</small>
+                </span>
+                <span class="tour-package-status">View package <span aria-hidden="true">→</span></span>
             </a>
         </div>
     </main>

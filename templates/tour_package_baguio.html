@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fbfaf7">
+    <title>Baguio Tour Package | EnAsia Tourist Transport</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=7) }}">
+</head>
+<body class="tour-detail-page">
+    <main class="tour-detail">
+        <a class="tour-back-link" href="{{ url_for('tour_package') }}">← All Tour Packages</a>
+
+        <header class="tour-detail-header">
+            <p class="tour-selection-eyebrow">EnAsia Tour Package</p>
+            <h1>Baguio</h1>
+            <p class="tour-detail-subtitle">2 days, 1 night · Friday to Sunday</p>
+        </header>
+
+        <section class="tour-detail-section" aria-labelledby="baguio-itinerary">
+            <h2 id="baguio-itinerary">Itinerary</h2>
+            <div class="tour-itinerary-days">
+                <article class="tour-itinerary-day">
+                    <p class="tour-day-label">Day 0 · Friday</p>
+                    <h3>Departure</h3>
+                    <p><strong>12:00 midnight</strong> · ETD for Baguio</p>
+                </article>
+
+                <article class="tour-itinerary-day">
+                    <p class="tour-day-label">Day 1 · Saturday</p>
+                    <h3>Baguio City Tour</h3>
+                    <ul>
+                        <li>Lion's Head</li>
+                        <li>Baguio Cathedral</li>
+                        <li>Strawberry Farm</li>
+                        <li>Stobosa Valley (Colorful Houses)</li>
+                        <li>Bell Church</li>
+                        <li>Diplomat Hotel</li>
+                        <li>Lourdes Grotto</li>
+                        <li>Bamboo Sanctuary</li>
+                        <li>Burnham Park</li>
+                        <li>Christmas Village</li>
+                    </ul>
+                </article>
+
+                <article class="tour-itinerary-day">
+                    <p class="tour-day-label">Day 2 · Sunday</p>
+                    <h3>Explore and Return</h3>
+                    <ul>
+                        <li>Botanical Garden</li>
+                        <li>The Mansion</li>
+                        <li>Wright Park</li>
+                        <li>Mines View</li>
+                        <li>Good Shepherd</li>
+                    </ul>
+                </article>
+            </div>
+        </section>
+
+        <section class="tour-detail-section" aria-labelledby="baguio-inclusions">
+            <h2 id="baguio-inclusions">Inclusions</h2>
+            <ul class="tour-detail-list">
+                <li>VIP van transfer: Manila to Baguio and back to Manila</li>
+                <li>Toll fees</li>
+                <li>Driver's meals</li>
+                <li>Tour coordinator</li>
+                <li>Tour around Baguio</li>
+            </ul>
+        </section>
+
+        <section class="tour-detail-section tour-notes" aria-labelledby="baguio-notes">
+            <h2 id="baguio-notes">Important Notes</h2>
+            <ul class="tour-detail-list">
+                <li>Deposits are non-refundable but transferable. If you need to back out, please let us know as soon as possible.</li>
+                <li>The remaining balance will be collected on the day of the event.</li>
+                <li>Cancellation 5 days prior to the event is considered paid.</li>
+                <li>The organizer may cancel the event if the minimum of 12 participants is not met. Reservation fees will be fully refunded if the event is canceled, unless it is rescheduled.</li>
+            </ul>
+        </section>
+
+        <a class="tour-back-link tour-detail-back-bottom" href="{{ url_for('tour_package') }}">← Browse all tour packages</a>
+    </main>
+</body>
+</html>
