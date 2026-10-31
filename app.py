@@ -340,16 +340,45 @@ def tour_package_detail(package_slug):
         "casiguran-aurora-casapsapan-beach": {
             "title": "Casiguran Aurora x Casapsapan Beach (High Roof Van)",
             "available": True,
+            "template": "tour_package.html",
         },
-        "baguio": {"title": "Baguio", "available": False},
-        "ilocos": {"title": "Ilocos", "available": False},
+        "baguio": {
+            "title": "Baguio",
+            "available": True,
+            "template": "tour_package_baguio.html",
+        },
+        "ilocos": {
+            "title": "Ilocos Sur + Ilocos Norte",
+            "available": True,
+            "template": "tour_package_ilocos.html",
+        },
         "la-union": {"title": "La Union", "available": False},
+        "jomalig-island": {
+            "title": "Jomalig Island",
+            "available": True,
+            "template": "tour_package_jomalig.html",
+        },
+        "calayan": {
+            "title": "Calayan Island",
+            "available": True,
+            "template": "tour_package_calayan.html",
+        },
+        "kalanggaman-tacloban-matnog-albay": {
+            "title": "Kalanggaman Island, Tacloban, Pink Beach Matnog + Albay",
+            "available": True,
+            "template": "tour_package_kalanggaman.html",
+        },
+        "burias-island": {
+            "title": "Burias Island",
+            "available": True,
+            "template": "tour_package_burias.html",
+        },
     }
     package = packages.get(package_slug)
     if package is None:
         return "Tour package not found", 404
     if package["available"]:
-        return render_template("tour_package.html")
+        return render_template(package["template"])
     return render_template("tour_package_coming_soon.html", package_title=package["title"])
 
 
