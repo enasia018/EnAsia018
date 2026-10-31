@@ -591,42 +591,50 @@ body.home-page {
     float: none;
 }
 
+.admin-page .van-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
 .admin-page .van-table {
+    display: table;
+    max-width: none;
     min-width: 1200px;
+    overflow: visible;
     table-layout: fixed;
+    width: 100%;
 }
 
 .admin-page .van-column-id {
-    width: 6%;
+    width: 3%;
 }
 
 .admin-page .van-column-details {
-    width: 39%;
+    width: 25%;
 }
 
 .admin-page .van-column-availability {
-    width: 35%;
+    width: 50%;
 }
 
-.admin-page .van-column-status,
+.admin-page .van-column-status {
+    width: 7%;
+}
+
 .admin-page .van-column-action {
-    width: 10%;
+    width: 15%;
 }
 
 .admin-page .van-edit-form {
     display: grid;
     gap: 8px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: 520px;
+    grid-template-columns: minmax(0, 1fr);
+    max-width: none;
 }
 
 .admin-page .van-edit-form input {
     min-width: 0;
     width: 100% !important;
-}
-
-.admin-page .van-edit-form input[name="van_name"] {
-    grid-column: 1 / -1;
 }
 
 .admin-page .van-edit-form button {
@@ -664,7 +672,16 @@ body.home-page {
     margin: 6px 0 10px !important;
 }
 
-.admin-page table {
+.admin-page .admin-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.admin-page .admin-data-table {
+    display: table;
+    max-width: none;
+    overflow: visible;
+    table-layout: auto;
     width: 100%;
 }
 
