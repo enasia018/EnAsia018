@@ -88,15 +88,10 @@
 </head>
 <body class="admin-page">
 
-    <div class="admin-watermark" aria-hidden="true"></div>
     <header class="admin-header">
-        <div class="admin-brand">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="" class="admin-brand-logo">
-            <div>
-                <p class="admin-eyebrow">EnAsia018 | Operations</p>
-                <h2>Admin Dashboard</h2>
-                <p class="admin-intro">Manage reservations, vehicles, rates, and applications.</p>
-            </div>
+        <div>
+            <h2>Admin Dashboard</h2>
+            <p class="admin-intro">Manage reservations, vehicles, rates, and applications.</p>
         </div>
         <a href="{{ url_for('admin_logout') }}" class="btn-logout">Logout</a>
     </header>
@@ -106,44 +101,16 @@
         {% endfor %}
     {% endwith %}
 
-    <h3 class="admin-tools-heading">Quick actions</h3>
-    <section class="admin-tools" aria-label="Quick actions">
-        <!-- Form to add a new Van -->
-        <div class="form-box">
-            <h4>Add New Van</h4>
-            <form action="{{ url_for('add_van') }}" method="POST">
-                <input type="text" name="van_name" placeholder="Van Name" required><br>
-                <input type="text" name="plate_number" placeholder="Plate Number"><br>
-                <input type="text" name="driver_name" placeholder="Driver Name"><br>
-                <button type="submit" class="btn-add">Add Van</button>
-            </form>
-        </div>
-
-        <!-- Form to add Pick-up & Destination Rate -->
-        <div class="form-box">
-            <h4>Add Pick-up & Destination Rate</h4>
-            <form action="{{ url_for('add_rate') }}" method="POST">
-                <input type="text" name="pickup_location" placeholder="Pick-up Location" required><br>
-                <input type="text" name="destination" placeholder="Destination Name" required><br>
-                <input type="text" name="rate_per_day" placeholder="Base rate (2 days, ₱)" required><br>
-                <button type="submit" class="btn-add">Add Rate</button>
-            </form>
-        </div>
-
-        <!-- Form to add a new Franchise Option -->
-        <div class="form-box">
-            <h4>Add Franchise Option</h4>
-            <form action="{{ url_for('add_franchise_option') }}" method="POST">
-                <input type="text" name="title" placeholder="Option Title" required><br>
-                <input type="text" name="details" placeholder="Option Details" required><br>
-                <button type="submit" class="btn-add">Add Option</button>
-            </form>
-        </div>
-    </section>
-
     <!-- Section 1: Van Management -->
     <h3>Van List and Availability</h3>
-    <table>
+    <table class="van-table">
+        <colgroup>
+            <col class="van-column-id">
+            <col class="van-column-details">
+            <col class="van-column-availability">
+            <col class="van-column-status">
+            <col class="van-column-action">
+        </colgroup>
         <thead>
             <tr>
                 <th>ID</th>
@@ -158,10 +125,10 @@
             <tr>
                 <td>{{ van.id }}</td>
                 <td>
-                    <form action="{{ url_for('edit_van', van_id=van.id) }}" method="POST" style="display:inline;">
-                        <input type="text" name="van_name" value="{{ van.name }}" required style="background:#333; color:#fff; border:1px solid #555; width: 110px;">
-                        <input type="text" name="plate_number" value="{{ van.plate_number or '' }}" placeholder="Plate" style="background:#333; color:#fff; border:1px solid #555; width: 90px;">
-                        <input type="text" name="driver_name" value="{{ van.driver_name or '' }}" placeholder="Driver" style="background:#333; color:#fff; border:1px solid #555; width: 100px;">
+                    <form action="{{ url_for('edit_van', van_id=van.id) }}" method="POST" class="van-edit-form">
+                        <input type="text" name="van_name" value="{{ van.name }}" required>
+                        <input type="text" name="plate_number" value="{{ van.plate_number or '' }}" placeholder="Plate">
+                        <input type="text" name="driver_name" value="{{ van.driver_name or '' }}" placeholder="Driver">
                         <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update</button>
                     </form>
                 </td>
@@ -461,6 +428,38 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <h3 class="admin-tools-heading">Add items</h3>
+    <section class="admin-tools" aria-label="Add vehicles, rates, and franchise options">
+        <div class="form-box">
+            <h4>Add New Van</h4>
+            <form action="{{ url_for('add_van') }}" method="POST">
+                <input type="text" name="van_name" placeholder="Van Name" required><br>
+                <input type="text" name="plate_number" placeholder="Plate Number"><br>
+                <input type="text" name="driver_name" placeholder="Driver Name"><br>
+                <button type="submit" class="btn-add">Add Van</button>
+            </form>
+        </div>
+
+        <div class="form-box">
+            <h4>Add Pick-up & Destination Rate</h4>
+            <form action="{{ url_for('add_rate') }}" method="POST">
+                <input type="text" name="pickup_location" placeholder="Pick-up Location" required><br>
+                <input type="text" name="destination" placeholder="Destination Name" required><br>
+                <input type="text" name="rate_per_day" placeholder="Base rate (2 days, ₱)" required><br>
+                <button type="submit" class="btn-add">Add Rate</button>
+            </form>
+        </div>
+
+        <div class="form-box">
+            <h4>Add Franchise Option</h4>
+            <form action="{{ url_for('add_franchise_option') }}" method="POST">
+                <input type="text" name="title" placeholder="Option Title" required><br>
+                <input type="text" name="details" placeholder="Option Details" required><br>
+                <button type="submit" class="btn-add">Add Option</button>
+            </form>
+        </div>
+    </section>
 
 </body>
 </html>
