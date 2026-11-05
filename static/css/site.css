@@ -621,8 +621,19 @@ body.home-page {
 .admin-page .form-box {
     display: inline-block;
     margin: 0 12px 18px 0 !important;
+    padding: 18px !important;
     vertical-align: top;
-    width: min(100%, 340px);
+    width: min(100%, 300px);
+}
+
+.admin-page .form-box h4 {
+    font-size: 1rem;
+    margin: 0 0 10px;
+}
+
+.admin-page .form-box form input {
+    min-height: 38px;
+    padding: 8px 10px !important;
 }
 
 .admin-page .form-box input {
