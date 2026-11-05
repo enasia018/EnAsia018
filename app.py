@@ -33,6 +33,7 @@ if database_url:
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url or "sqlite:///reservations.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 
 db = SQLAlchemy(app)
 
@@ -330,7 +331,55 @@ def vans_list():
 
 @app.route("/tour-package")
 def tour_package():
-    return render_template("tour_package.html")
+    return render_template("tour_packages.html")
+
+
+@app.route("/tour-package/<package_slug>")
+def tour_package_detail(package_slug):
+    packages = {
+        "casiguran-aurora-casapsapan-beach": {
+            "title": "Casiguran Aurora x Casapsapan Beach (High Roof Van)",
+            "available": True,
+            "template": "tour_package.html",
+        },
+        "baguio": {
+            "title": "Baguio",
+            "available": True,
+            "template": "tour_package_baguio.html",
+        },
+        "ilocos": {
+            "title": "Ilocos Sur + Ilocos Norte",
+            "available": True,
+            "template": "tour_package_ilocos.html",
+        },
+        "la-union": {"title": "La Union", "available": False},
+        "jomalig-island": {
+            "title": "Jomalig Island",
+            "available": True,
+            "template": "tour_package_jomalig.html",
+        },
+        "calayan": {
+            "title": "Calayan Island",
+            "available": True,
+            "template": "tour_package_calayan.html",
+        },
+        "kalanggaman-tacloban-matnog-albay": {
+            "title": "Kalanggaman Island, Tacloban, Pink Beach Matnog + Albay",
+            "available": True,
+            "template": "tour_package_kalanggaman.html",
+        },
+        "burias-island": {
+            "title": "Burias Island",
+            "available": True,
+            "template": "tour_package_burias.html",
+        },
+    }
+    package = packages.get(package_slug)
+    if package is None:
+        return "Tour package not found", 404
+    if package["available"]:
+        return render_template(package["template"])
+    return render_template("tour_package_coming_soon.html", package_title=package["title"])
 
 
 @app.route("/tour/apply", methods=["GET", "POST"])
@@ -729,7 +778,7 @@ def delete_van_reservations(van_id):
 def approve_franchise(app_id):
     if not session.get("logged_in"):
         return redirect(url_for("admin_login"))
-    app_entry = db.session.get(FranchiseApplication, app_id)
+    app_entry = FranchiseApplication.query.get(app_id)
     if app_entry:
         app_entry.status = "Approved"
         app_entry.schedule = request.form.get("schedule")
@@ -907,5 +956,12 @@ def admin_logout():
     return redirect(url_for("admin_login"))
 
 
+@app.route("/health")
+def health():
+    """Simple health-check endpoint for the hosting platform."""
+    return "ok", 200
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(host="0.0.0.0", port=port, debug=False)
