@@ -1,6 +1,8 @@
 import os
 import smtplib
 import uuid
+import mimetypes
+from io import BytesIO
 from datetime import date, datetime, timedelta
 from email.message import EmailMessage
 from zoneinfo import ZoneInfo
@@ -11,6 +13,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     send_from_directory,
     session,
     url_for,
@@ -147,8 +150,14 @@ class FranchiseApplication(db.Model):
     vehicle_type = db.Column(db.String(50), nullable=False)
     vehicle_model = db.Column(db.String(50), nullable=False)
     plate_number = db.Column(db.String(50), nullable=False)
+    # Keep the original filenames for compatibility with existing records.
+    # New OR/CR uploads are stored directly in Neon PostgreSQL as binary data.
     or_file = db.Column(db.String(200), nullable=False)
     cr_file = db.Column(db.String(200), nullable=False)
+    or_file_data = db.Column(db.LargeBinary, nullable=True)
+    cr_file_data = db.Column(db.LargeBinary, nullable=True)
+    or_file_mimetype = db.Column(db.String(150), nullable=True)
+    cr_file_mimetype = db.Column(db.String(150), nullable=True)
     status = db.Column(db.String(50), default="Pending")
     schedule = db.Column(db.String(100), nullable=True)
 
@@ -176,6 +185,32 @@ class GCashPayment(db.Model):
 
 with app.app_context():
     db.create_all()
+
+    # db.create_all() does not add columns to an existing table, so add the
+    # document fields safely for existing SQLite and PostgreSQL databases.
+    franchise_columns = {
+        column["name"]
+        for column in inspect(db.engine).get_columns("franchise_application")
+    }
+    binary_column_type = "BYTEA" if db.engine.dialect.name == "postgresql" else "BLOB"
+    with db.engine.begin() as connection:
+        if "or_file_data" not in franchise_columns:
+            connection.execute(
+                text(f"ALTER TABLE franchise_application ADD COLUMN or_file_data {binary_column_type}")
+            )
+        if "cr_file_data" not in franchise_columns:
+            connection.execute(
+                text(f"ALTER TABLE franchise_application ADD COLUMN cr_file_data {binary_column_type}")
+            )
+        if "or_file_mimetype" not in franchise_columns:
+            connection.execute(
+                text("ALTER TABLE franchise_application ADD COLUMN or_file_mimetype VARCHAR(150)")
+            )
+        if "cr_file_mimetype" not in franchise_columns:
+            connection.execute(
+                text("ALTER TABLE franchise_application ADD COLUMN cr_file_mimetype VARCHAR(150)")
+            )
+
     reservation_columns = {
         column["name"] for column in inspect(db.engine).get_columns("reservation")
     }
@@ -268,19 +303,28 @@ def franchise_apply(option_id):
         vehicle_model = request.form.get("vehicle_model")
         plate_number = request.form.get("plate_number")
 
+        # Store OR/CR file bytes in the database instead of SnapDeploy's
+        # temporary local filesystem. The filenames remain for admin display
+        # and compatibility with older application records.
         or_file = request.files.get("or_file")
         or_filename = ""
+        or_file_data = None
+        or_file_mimetype = None
         if or_file and or_file.filename != "":
             safe_name = secure_filename(or_file.filename)
             or_filename = f"or{option_id}_{uuid.uuid4().hex}_{safe_name}"[:200]
-            or_file.save(os.path.join(app.config["UPLOAD_FOLDER"], or_filename))
+            or_file_data = or_file.read()
+            or_file_mimetype = mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
 
         cr_file = request.files.get("cr_file")
         cr_filename = ""
+        cr_file_data = None
+        cr_file_mimetype = None
         if cr_file and cr_file.filename != "":
             safe_name = secure_filename(cr_file.filename)
             cr_filename = f"cr{option_id}_{uuid.uuid4().hex}_{safe_name}"[:200]
-            cr_file.save(os.path.join(app.config["UPLOAD_FOLDER"], cr_filename))
+            cr_file_data = cr_file.read()
+            cr_file_mimetype = mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
 
         new_app = FranchiseApplication(
             full_name=full_name,
@@ -292,6 +336,10 @@ def franchise_apply(option_id):
             plate_number=plate_number,
             or_file=or_filename,
             cr_file=cr_filename,
+            or_file_data=or_file_data,
+            cr_file_data=cr_file_data,
+            or_file_mimetype=or_file_mimetype,
+            cr_file_mimetype=cr_file_mimetype,
             status=f"Pending (Option {option_id})"
         )
         db.session.add(new_app)
@@ -809,7 +857,29 @@ def view_franchise_document(app_id, document_type):
     if not filename:
         abort(404)
 
-    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+    # New uploads are read from NeonDB. Older applications are served from
+    # the previous local upload folder if that file is still present.
+    file_data = getattr(application, f"{document_type}_file_data", None)
+    if file_data:
+        stored_mimetype = getattr(application, f"{document_type}_file_mimetype", None)
+        guessed_mimetype = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+        safe_inline_types = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
+        mimetype = stored_mimetype if stored_mimetype in safe_inline_types else guessed_mimetype
+        can_display_inline = mimetype in safe_inline_types
+        return send_file(
+            BytesIO(file_data),
+            mimetype=mimetype,
+            as_attachment=not can_display_inline,
+            download_name=filename,
+            max_age=0,
+        )
+
+    # Backward compatibility for records uploaded before this update.
+    legacy_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    if os.path.isfile(legacy_path):
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+    abort(404)
 
 
 @app.route("/admin/franchise/delete/<int:app_id>", methods=["POST"])
