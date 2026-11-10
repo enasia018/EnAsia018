@@ -1,14 +1,17 @@
 import os
 import smtplib
+import uuid
 from datetime import date, datetime, timedelta
 from email.message import EmailMessage
 from zoneinfo import ZoneInfo
 from flask import (
     Flask,
+    abort,
     flash,
     redirect,
     render_template,
     request,
+    send_from_directory,
     session,
     url_for,
 )
@@ -86,9 +89,12 @@ def get_van_display_status(van, reservations, today=None):
     return "Available"
 
 
-UPLOAD_FOLDER = "static/uploads"
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+UPLOAD_FOLDER = os.environ.get(
+    "UPLOAD_FOLDER",
+    os.path.join(app.root_path, "static", "uploads"),
+)
+app.config["UPLOAD_FOLDER"] = os.path.abspath(UPLOAD_FOLDER)
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 
 class Reservation(db.Model):
@@ -265,13 +271,15 @@ def franchise_apply(option_id):
         or_file = request.files.get("or_file")
         or_filename = ""
         if or_file and or_file.filename != "":
-            or_filename = secure_filename(f"or{option_id}_" + or_file.filename)
+            safe_name = secure_filename(or_file.filename)
+            or_filename = f"or{option_id}_{uuid.uuid4().hex}_{safe_name}"[:200]
             or_file.save(os.path.join(app.config["UPLOAD_FOLDER"], or_filename))
 
         cr_file = request.files.get("cr_file")
         cr_filename = ""
         if cr_file and cr_file.filename != "":
-            cr_filename = secure_filename(f"cr{option_id}_" + cr_file.filename)
+            safe_name = secure_filename(cr_file.filename)
+            cr_filename = f"cr{option_id}_{uuid.uuid4().hex}_{safe_name}"[:200]
             cr_file.save(os.path.join(app.config["UPLOAD_FOLDER"], cr_filename))
 
         new_app = FranchiseApplication(
@@ -784,6 +792,24 @@ def approve_franchise(app_id):
         app_entry.schedule = request.form.get("schedule")
         db.session.commit()
     return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/franchise/<int:app_id>/document/<document_type>")
+def view_franchise_document(app_id, document_type):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+    if document_type not in {"or", "cr"}:
+        abort(404)
+
+    application = db.session.get(FranchiseApplication, app_id)
+    if application is None:
+        abort(404)
+
+    filename = getattr(application, f"{document_type}_file")
+    if not filename:
+        abort(404)
+
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
 @app.route("/admin/franchise/delete/<int:app_id>", methods=["POST"])
