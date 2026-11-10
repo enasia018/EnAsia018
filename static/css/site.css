@@ -640,6 +640,22 @@ body.home-page {
     margin: 6px 0 10px !important;
 }
 
+.admin-page .van-edit-form {
+    display: grid;
+    gap: 8px;
+    max-width: 230px;
+}
+
+.admin-page .van-edit-form input {
+    margin: 0 !important;
+    min-height: 38px;
+    width: 100%;
+}
+
+.admin-page .van-edit-form button {
+    justify-self: start;
+}
+
 .admin-page .schedule-form {
     align-items: end;
     display: grid;
@@ -669,6 +685,26 @@ body.home-page {
     margin-top: 12px;
     min-width: 250px;
     padding-top: 12px;
+}
+
+.admin-page .van-management-panel {
+    margin-top: 10px;
+    min-width: 220px;
+}
+
+.admin-page .van-management-panel summary {
+    background: var(--mint);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--pine);
+    cursor: pointer;
+    font-size: .8rem;
+    font-weight: 700;
+    padding: 8px 10px;
+}
+
+.admin-page .van-management-panel[open] summary {
+    border-radius: 8px 8px 0 0;
 }
 
 .admin-page .van-schedule-form > strong {
