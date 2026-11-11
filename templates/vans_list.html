@@ -59,10 +59,13 @@
             margin: 8px 0 0;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=14) }}">
 </head>
 <body class="van-list-page">
     <div class="container">
+        <div style="text-align: left; margin-bottom: 10px;">
+            <a href="{{ url_for('home') }}" class="tour-back-link">← Back to Main Menu</a>
+        </div>
         <h2>Van Availability</h2>
         <ul>
             {% for van in vans %}
@@ -92,6 +95,9 @@
                 </li>
             {% endfor %}
         </ul>
+        <div style="margin-top: 20px; text-align: center;">
+            <a href="{{ url_for('home') }}" class="btn-home">← Back to Main Menu</a>
+        </div>
     </div>
 </body>
 </html>

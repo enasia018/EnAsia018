@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Van List & Schedule | EnAsia Admin</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #fff;
+            padding: 20px;
+        }
+        h2, h3 {
+            color: #ff3333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            background: #222;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #333;
+            color: #ff3333;
+        }
+        .btn-approve {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        .btn-delete {
+            background-color: #ff3333;
+            color: white;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        .btn-toggle {
+            background-color: #ff9800;
+            color: white;
+            padding: 5px 10px;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        .btn-add {
+            background-color: #ff3333;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 3px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .form-box {
+            background: #222;
+            padding: 15px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: inline-block;
+            vertical-align: top;
+        }
+        input[type="text"] {
+            padding: 6px;
+            margin-right: 10px;
+            margin-bottom: 5px;
+            border-radius: 3px;
+            border: none;
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=14) }}">
+</head>
+<body class="admin-page">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+        <h2 style="margin: 0;">Van List, Availability &amp; Schedule</h2>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{{ url_for('admin_van_finances') }}" class="btn-add" style="text-decoration: none;">🚐 Van Earnings &amp; Expenses</a>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn-add" style="text-decoration: none;">← Back to Admin Dashboard</a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="admin-notice admin-notice-{{ category }}" role="status">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <!-- Form to add a new Van -->
+    <div class="form-box">
+        <h4>Add New Van</h4>
+        <form action="{{ url_for('add_van') }}" method="POST">
+            <input type="text" name="van_name" placeholder="Van Name" required><br>
+            <input type="text" name="plate_number" placeholder="Plate Number"><br>
+            <input type="text" name="driver_name" placeholder="Driver Name"><br>
+            <button type="submit" class="btn-add">Add Van</button>
+        </form>
+    </div>
+
+    <h3>Van List and Availability ({{ vans|length }} Vans)</h3>
+    <div class="admin-table-wrap admin-table-wrap-vans">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Van Details &amp; Update</th>
+                <th>Availability &amp; Schedule</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for van in vans %}
+            <tr>
+                <td>{{ van.id }}</td>
+                <td>
+                    <form action="{{ url_for('edit_van', van_id=van.id) }}" method="POST" class="van-edit-form">
+                        <input type="text" name="van_name" value="{{ van.name }}" placeholder="Van Name" aria-label="Van Name" required>
+                        <input type="text" name="plate_number" value="{{ van.plate_number or '' }}" placeholder="Plate Number" aria-label="Plate Number">
+                        <input type="text" name="driver_name" value="{{ van.driver_name or '' }}" placeholder="Driver Name" aria-label="Driver Name">
+                        <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update</button>
+                    </form>
+                </td>
+                <td>
+                    {% set van_reservations = reservations | selectattr('vans', 'equalto', van.name) | list %}
+                    {% if van_reservations %}
+                        <div class="van-booking-list">
+                            {% for booking in van_reservations %}
+                                <div class="van-booking">
+                                    <strong>{{ booking.name }}</strong>
+                                    <span>{{ booking.pickup_date or 'Date not set' }} · {{ booking.pickup_time or 'Time not set' }}</span>
+                                    <small>{{ booking.status }}</small>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <span class="van-no-bookings">No linked reservations</span>
+                    {% endif %}
+
+                    <details class="van-management-panel">
+                        <summary>Manage schedule and reservations</summary>
+                        <form action="{{ url_for('delete_van_reservations', van_id=van.id) }}" method="POST" style="margin: 10px 0;">
+                            <button type="submit" class="btn-delete" style="border: none; cursor: pointer;" onclick="return confirm('Permanently delete ALL reservations for this van? This cannot be undone.');">
+                                Delete All Reservations for This Van
+                            </button>
+                        </form>
+
+                        <form action="{{ url_for('update_van_schedule', van_id=van.id) }}" method="POST" class="van-schedule-form">
+                            <strong>Manual schedule / note</strong>
+                            <div class="van-schedule-fields">
+                                <label>
+                                    Date
+                                    <input type="date" name="schedule_date" value="{{ van.schedule_date or '' }}">
+                                </label>
+                                <label>
+                                    Time
+                                    <input type="time" name="schedule_time" value="{{ van.schedule_time or '' }}">
+                                </label>
+                            </div>
+                            <label>
+                                Note
+                                <textarea name="schedule_note" maxlength="500" rows="2" placeholder="Add a manual schedule note">{{ van.schedule_note or '' }}</textarea>
+                            </label>
+                            <button type="submit" class="btn-add">Save Van Schedule</button>
+                        </form>
+                    </details>
+                </td>
+                <td>
+                    {% if van_statuses[van.id] == 'Available' %}
+                        <span style="color: #4CAF50; font-weight: bold;">Available</span>
+                    {% else %}
+                        <span style="color: #ff4d4d; font-weight: bold;">Not Available</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('toggle_van_status', van_id=van.id) }}" class="btn-toggle">Change Status</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+</body>
+</html>

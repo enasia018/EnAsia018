@@ -100,6 +100,12 @@
         <a href="{{ url_for('admin_members_page') }}" target="_blank" rel="noopener noreferrer" class="btn-add" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
             🪪 Members Directory ↗
         </a>
+        <a href="{{ url_for('admin_vans_schedule') }}" target="_blank" rel="noopener noreferrer" class="btn-add" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+            🗓️ Van List &amp; Schedule ↗
+        </a>
+        <a href="{{ url_for('admin_van_finances') }}" target="_blank" rel="noopener noreferrer" class="btn-add" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+            🚐 Van Earnings &amp; Expenses ↗
+        </a>
     </div>
 
     <!-- Form to add a new Van -->
@@ -383,91 +389,6 @@
                             Delete This Reservation
                         </button>
                     </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
-
-    <!-- Section 7: Van Management -->
-    <h3>Van List and Availability</h3>
-    <div class="admin-table-wrap admin-table-wrap-vans">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Van Details & Update</th>
-                <th>Availability</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for van in vans %}
-            <tr>
-                <td>{{ van.id }}</td>
-                <td>
-                    <form action="{{ url_for('edit_van', van_id=van.id) }}" method="POST" class="van-edit-form">
-                        <input type="text" name="van_name" value="{{ van.name }}" placeholder="Van Name" aria-label="Van Name" required>
-                        <input type="text" name="plate_number" value="{{ van.plate_number or '' }}" placeholder="Plate Number" aria-label="Plate Number">
-                        <input type="text" name="driver_name" value="{{ van.driver_name or '' }}" placeholder="Driver Name" aria-label="Driver Name">
-                        <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update</button>
-                    </form>
-                </td>
-                <td>
-                    {% set van_reservations = reservations | selectattr('vans', 'equalto', van.name) | list %}
-                    {% if van_reservations %}
-                        <div class="van-booking-list">
-                            {% for booking in van_reservations %}
-                                <div class="van-booking">
-                                    <strong>{{ booking.name }}</strong>
-                                    <span>{{ booking.pickup_date or 'Date not set' }} · {{ booking.pickup_time or 'Time not set' }}</span>
-                                    <small>{{ booking.status }}</small>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <span class="van-no-bookings">No linked reservations</span>
-                    {% endif %}
-
-                    <details class="van-management-panel">
-                        <summary>Manage schedule and reservations</summary>
-                        <form action="{{ url_for('delete_van_reservations', van_id=van.id) }}" method="POST" style="margin: 10px 0;">
-                            <button type="submit" class="btn-delete" style="border: none; cursor: pointer;" onclick="return confirm('Permanently delete ALL reservations for this van? This cannot be undone.');">
-                                Delete All Reservations for This Van
-                            </button>
-                        </form>
-
-                        <form action="{{ url_for('update_van_schedule', van_id=van.id) }}" method="POST" class="van-schedule-form">
-                            <strong>Manual schedule / note</strong>
-                            <div class="van-schedule-fields">
-                                <label>
-                                    Date
-                                    <input type="date" name="schedule_date" value="{{ van.schedule_date or '' }}">
-                                </label>
-                                <label>
-                                    Time
-                                    <input type="time" name="schedule_time" value="{{ van.schedule_time or '' }}">
-                                </label>
-                            </div>
-                            <label>
-                                Note
-                                <textarea name="schedule_note" maxlength="500" rows="2" placeholder="Add a manual schedule note">{{ van.schedule_note or '' }}</textarea>
-                            </label>
-                            <button type="submit" class="btn-add">Save Van Schedule</button>
-                        </form>
-                    </details>
-                </td>
-                <td>
-                    {% if van_statuses[van.id] == 'Available' %}
-                        <span style="color: #4CAF50; font-weight: bold;">Available</span>
-                    {% else %}
-                        <span style="color: #ff4d4d; font-weight: bold;">Not Available</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="{{ url_for('toggle_van_status', van_id=van.id) }}" class="btn-toggle">Change Status</a>
                 </td>
             </tr>
             {% endfor %}

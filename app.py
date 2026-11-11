@@ -222,6 +222,19 @@ class Member(db.Model):
         return check_password_hash(self.password_hash, password)
 
 
+class VanTransaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    van_id = db.Column(db.Integer, nullable=False)
+    van_name = db.Column(db.String(100), nullable=False)
+    tx_type = db.Column(db.String(20), nullable=False)  # "earning" or "expense"
+    tx_date = db.Column(db.String(10), nullable=False)  # YYYY-MM-DD
+    tx_month = db.Column(db.String(7), nullable=False)  # YYYY-MM
+    category = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(300), nullable=True)
+    amount = db.Column(db.Float, nullable=False, default=0.0)
+    reservation_id = db.Column(db.Integer, nullable=True)
+
+
 def generate_next_member_code():
     existing_codes = [m.member_code for m in Member.query.all() if m.member_code]
     max_num = 0
@@ -857,7 +870,9 @@ def parse_xlsx_rows(file_bytes):
                 elif c_type == "inlineStr" and is_el is not None:
                     val = "".join(t.text or "" for t in is_el.findall(f".//{ns}t"))
                 elif v_el is not None and v_el.text is not None:
-                    val = v_el.text
+                    val = v_el.text.strip()
+                    if re.fullmatch(r"-?\d+\.0+", val):
+                        val = val.split(".")[0]
                 row_dict[c_idx] = val.strip()
             if max_col >= 0:
                 rows.append([row_dict.get(i, "") for i in range(max_col + 1)])
@@ -1362,7 +1377,7 @@ def delete_van_reservations(van_id):
         f"Deleted {deleted_count} reservation(s) for {van.name}.",
         "success" if deleted_count else "info",
     )
-    return redirect(url_for("admin_dashboard"))
+    return redirect(request.referrer or url_for("admin_vans_schedule"))
 
 
 @app.route("/admin/franchise/approve/<int:app_id>", methods=["POST"])
@@ -1445,6 +1460,24 @@ def delete_tour(app_id):
     return redirect(url_for("admin_dashboard"))
 
 
+@app.route("/admin/vans-schedule")
+def admin_vans_schedule():
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+    all_reservations = Reservation.query.all()
+    all_vans = Van.query.all()
+    van_statuses = {
+        van.id: get_van_display_status(van, all_reservations)
+        for van in all_vans
+    }
+    return render_template(
+        "admin_vans_schedule.html",
+        reservations=all_reservations,
+        vans=all_vans,
+        van_statuses=van_statuses,
+    )
+
+
 @app.route("/admin/van/toggle/<int:van_id>")
 def toggle_van_status(van_id):
     if not session.get("logged_in"):
@@ -1456,7 +1489,7 @@ def toggle_van_status(van_id):
         else:
             van.status = "Available"
         db.session.commit()
-    return redirect(url_for("admin_dashboard"))
+    return redirect(request.referrer or url_for("admin_vans_schedule"))
 
 
 @app.route("/admin/van/<int:van_id>/schedule", methods=["POST"])
@@ -1475,19 +1508,19 @@ def update_van_schedule(van_id):
             datetime.strptime(schedule_time, "%H:%M")
     except ValueError:
         flash("Enter a valid manual schedule date and time.", "error")
-        return redirect(url_for("admin_dashboard"))
+        return redirect(request.referrer or url_for("admin_vans_schedule"))
 
     van = db.session.get(Van, van_id)
     if van is None:
         flash("Van not found.", "error")
-        return redirect(url_for("admin_dashboard"))
+        return redirect(request.referrer or url_for("admin_vans_schedule"))
 
     van.schedule_date = schedule_date or None
     van.schedule_time = schedule_time or None
     van.schedule_note = schedule_note or None
     db.session.commit()
     flash(f"Manual schedule updated for {van.name}.", "success")
-    return redirect(url_for("admin_dashboard"))
+    return redirect(request.referrer or url_for("admin_vans_schedule"))
 
 
 @app.route("/admin/van/add", methods=["POST"])
@@ -1507,7 +1540,8 @@ def add_van():
         )
         db.session.add(new_van)
         db.session.commit()
-    return redirect(url_for("admin_dashboard"))
+        flash(f"Added new van '{van_name}'.", "success")
+    return redirect(request.referrer or url_for("admin_vans_schedule"))
 
 
 @app.route("/admin/van/edit/<int:van_id>", methods=["POST"])
@@ -1520,7 +1554,8 @@ def edit_van(van_id):
         van.plate_number = request.form.get("plate_number")
         van.driver_name = request.form.get("driver_name")
         db.session.commit()
-    return redirect(url_for("admin_dashboard"))
+        flash(f"Updated details for '{van.name}'.", "success")
+    return redirect(request.referrer or url_for("admin_vans_schedule"))
 
 
 @app.route("/admin/rate/add", methods=["POST"])
@@ -1579,6 +1614,242 @@ def edit_franchise_option(option_id):
         option_entry.details = request.form.get("details")
         db.session.commit()
     return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/van-finances")
+def admin_van_finances():
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    all_vans = Van.query.order_by(Van.id).all()
+    selected_van_id = request.args.get("van_id", type=int)
+    month_filter = request.args.get("month", "").strip()
+
+    selected_van = None
+    if selected_van_id:
+        selected_van = db.session.get(Van, selected_van_id)
+    if selected_van is None and all_vans:
+        selected_van = all_vans[0]
+
+    all_txs = VanTransaction.query.order_by(VanTransaction.tx_date.desc(), VanTransaction.id.desc()).all()
+    available_months = sorted({tx.tx_month for tx in all_txs if tx.tx_month}, reverse=True)
+    current_month = datetime.now(BUSINESS_TIMEZONE).strftime("%Y-%m")
+    if current_month not in available_months:
+        available_months.insert(0, current_month)
+
+    # Compute per-van totals (filtered by month_filter if set, otherwise all time)
+    van_summaries = {}
+    fleet_earnings = 0.0
+    fleet_expenses = 0.0
+
+    for v in all_vans:
+        van_summaries[v.id] = {"earnings": 0.0, "expenses": 0.0, "net": 0.0}
+
+    for tx in all_txs:
+        if month_filter and tx.tx_month != month_filter:
+            continue
+        if tx.van_id in van_summaries:
+            if tx.tx_type == "earning":
+                van_summaries[tx.van_id]["earnings"] += tx.amount
+                fleet_earnings += tx.amount
+            else:
+                van_summaries[tx.van_id]["expenses"] += tx.amount
+                fleet_expenses += tx.amount
+
+    for v_id, s in van_summaries.items():
+        s["net"] = s["earnings"] - s["expenses"]
+
+    fleet_net = fleet_earnings - fleet_expenses
+
+    # Selected van transactions and monthly breakdown
+    selected_txs = []
+    monthly_breakdown = []
+    van_rentals = []
+    recorded_res_ids = {tx.reservation_id for tx in all_txs if tx.reservation_id}
+
+    if selected_van:
+        van_all_txs = [tx for tx in all_txs if tx.van_id == selected_van.id]
+        selected_txs = [
+            tx for tx in van_all_txs
+            if (not month_filter or tx.tx_month == month_filter)
+        ]
+
+        month_map = {}
+        for tx in van_all_txs:
+            m_key = tx.tx_month or "Unknown"
+            if m_key not in month_map:
+                month_map[m_key] = {"month": m_key, "earnings": 0.0, "expenses": 0.0, "net": 0.0}
+            if tx.tx_type == "earning":
+                month_map[m_key]["earnings"] += tx.amount
+            else:
+                month_map[m_key]["expenses"] += tx.amount
+        for m_key in sorted(month_map.keys(), reverse=True):
+            item = month_map[m_key]
+            item["net"] = item["earnings"] - item["expenses"]
+            monthly_breakdown.append(item)
+
+        # Find reservations for this van and estimate their rental fee
+        rates_by_dest = {
+            r.destination.strip().lower(): r.rate_per_day
+            for r in DestinationRate.query.all()
+            if r.destination
+        }
+        reservations = Reservation.query.filter_by(vans=selected_van.name).order_by(Reservation.id.desc()).all()
+        for res in reservations:
+            try:
+                r_days = max(int(res.days), 2)
+            except (TypeError, ValueError):
+                r_days = 2
+            dest_key = (res.destination or "").strip().lower()
+            base_rate = rates_by_dest.get(dest_key, 0.0)
+            est_amount = (base_rate + max(r_days - 2, 0) * 3000.0) if base_rate > 0 else 0.0
+            van_rentals.append({
+                "reservation": res,
+                "estimated_amount": est_amount,
+                "already_recorded": res.id in recorded_res_ids,
+                "default_date": res.pickup_date or datetime.now(BUSINESS_TIMEZONE).strftime("%Y-%m-%d"),
+            })
+
+    today_str = datetime.now(BUSINESS_TIMEZONE).strftime("%Y-%m-%d")
+
+    return render_template(
+        "admin_van_finances.html",
+        vans=all_vans,
+        selected_van=selected_van,
+        van_summaries=van_summaries,
+        fleet_earnings=fleet_earnings,
+        fleet_expenses=fleet_expenses,
+        fleet_net=fleet_net,
+        selected_txs=selected_txs,
+        monthly_breakdown=monthly_breakdown,
+        van_rentals=van_rentals,
+        available_months=available_months,
+        month_filter=month_filter,
+        today_str=today_str,
+    )
+
+
+@app.route("/admin/van-finances/add-van", methods=["POST"])
+def admin_finances_add_van():
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    van_name = request.form.get("van_name", "").strip()
+    plate_number = request.form.get("plate_number", "").strip()
+    driver_name = request.form.get("driver_name", "").strip()
+
+    if not van_name:
+        flash("Van name is required.", "error")
+        return redirect(url_for("admin_van_finances"))
+
+    new_van = Van(
+        name=van_name,
+        plate_number=plate_number or None,
+        driver_name=driver_name or None,
+        status="Available",
+    )
+    db.session.add(new_van)
+    db.session.commit()
+    flash(f"Added new van '{van_name}' ({plate_number or 'No plate'}).", "success")
+    return redirect(url_for("admin_van_finances", van_id=new_van.id))
+
+
+@app.route("/admin/van-finances/edit-van/<int:van_id>", methods=["POST"])
+def admin_finances_edit_van(van_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    van = db.session.get(Van, van_id)
+    if van is None:
+        flash("Van not found.", "error")
+        return redirect(url_for("admin_van_finances"))
+
+    old_name = van.name
+    new_name = request.form.get("van_name", "").strip() or van.name
+    van.name = new_name
+    van.plate_number = request.form.get("plate_number", "").strip() or None
+    van.driver_name = request.form.get("driver_name", "").strip() or None
+
+    if old_name != new_name:
+        for tx in VanTransaction.query.filter_by(van_id=van.id).all():
+            tx.van_name = new_name
+
+    db.session.commit()
+    flash(f"Updated details for '{van.name}'.", "success")
+    return redirect(url_for("admin_van_finances", van_id=van.id))
+
+
+@app.route("/admin/van-finances/transaction/add", methods=["POST"])
+def admin_finances_add_tx():
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    van_id = request.form.get("van_id", type=int)
+    van = db.session.get(Van, van_id) if van_id else None
+    if van is None:
+        flash("Please select a valid van.", "error")
+        return redirect(url_for("admin_van_finances"))
+
+    tx_type = request.form.get("tx_type", "earning").strip().lower()
+    if tx_type not in ("earning", "expense"):
+        tx_type = "earning"
+
+    tx_date = request.form.get("tx_date", "").strip()
+    if not tx_date:
+        tx_date = datetime.now(BUSINESS_TIMEZONE).strftime("%Y-%m-%d")
+    tx_month = tx_date[:7]
+
+    category = request.form.get("category", "").strip() or (
+        "Van Rental (Arkila)" if tx_type == "earning" else "Expense"
+    )
+    description = request.form.get("description", "").strip()
+    amount_raw = request.form.get("amount", "0").replace(",", "").replace("₱", "").strip()
+    reservation_id = request.form.get("reservation_id", type=int)
+    month_filter = request.form.get("month_filter", "").strip()
+
+    try:
+        amount = float(amount_raw)
+        if amount <= 0:
+            raise ValueError
+    except ValueError:
+        flash("Please enter a valid amount greater than 0.", "error")
+        return redirect(url_for("admin_van_finances", van_id=van.id, month=month_filter or None))
+
+    new_tx = VanTransaction(
+        van_id=van.id,
+        van_name=van.name,
+        tx_type=tx_type,
+        tx_date=tx_date,
+        tx_month=tx_month,
+        category=category,
+        description=description or None,
+        amount=amount,
+        reservation_id=reservation_id,
+    )
+    db.session.add(new_tx)
+    db.session.commit()
+
+    label = "Earning" if tx_type == "earning" else "Expense"
+    flash(f"Recorded {label} of ₱{amount:,.2f} for {van.name}.", "success")
+    return redirect(url_for("admin_van_finances", van_id=van.id, month=month_filter or None))
+
+
+@app.route("/admin/van-finances/transaction/delete/<int:tx_id>", methods=["POST"])
+def admin_finances_delete_tx(tx_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    tx = db.session.get(VanTransaction, tx_id)
+    if tx is None:
+        flash("Record not found.", "error")
+        return redirect(url_for("admin_van_finances"))
+
+    van_id = tx.van_id
+    month_filter = request.form.get("month_filter", "").strip()
+    db.session.delete(tx)
+    db.session.commit()
+    flash("Deleted transaction record.", "success")
+    return redirect(url_for("admin_van_finances", van_id=van_id, month=month_filter or None))
 
 
 @app.route("/admin/logout")
