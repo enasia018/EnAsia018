@@ -156,10 +156,15 @@ body.rental-page {
     color: #fff !important;
 }
 
+.rental-page .van-booking-schedule,
+.rental-page .van-booking-schedule strong,
+.rental-page .van-booking-schedule li {
+    color: #ffeb3b !important;
+    font-size: .88rem;
+}
+
 .rental-page .van-booking-schedule {
-    color: var(--ink);
-    font-size: .85rem;
-    margin: -8px 0 14px;
+    margin: -6px 0 14px;
 }
 
 .rental-page .van-booking-schedule ul {
