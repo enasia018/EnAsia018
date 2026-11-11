@@ -76,7 +76,7 @@
             background-color: #777;
         }
     </style>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=14) }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=15) }}">
     </head>
     <body class="rental-page">
 
@@ -102,7 +102,7 @@
                 <option value="{{ van.name }}" data-bookings='{{ schedules_by_van.get(van.name, []) | tojson | forceescape }}'>{{ van.name }} (Plate: {{ van.plate_number }})</option>
             {% endfor %}
         </select>
-        <div id="vanBookingSchedule" class="van-booking-schedule" aria-live="polite"></div>
+        <div id="vanBookingSchedule" class="van-booking-schedule" style="color: #ffeb3b; font-weight: 600;" aria-live="polite"></div>
         <p id="vanAvailabilityMessage" class="van-availability-message" role="alert" hidden></p>
 
         {% if reservation_error %}
