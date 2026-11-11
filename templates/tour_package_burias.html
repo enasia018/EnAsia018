@@ -136,7 +136,10 @@
             </ul>
         </section>
 
-        <a class="tour-back-link tour-detail-back-bottom" href="{{ url_for('tour_package') }}">← Browse all tour packages</a>
+        <div class="btn-container" style="display: flex; justify-content: center; gap: 12px; margin-top: 24px; flex-wrap: wrap;">
+            <a href="{{ url_for('tour_apply', package='Burias Island (2D1N)') }}" class="btn">Apply Tour Package</a>
+            <a href="{{ url_for('tour_package') }}" class="btn">← All Tour Packages</a>
+        </div>
     </main>
 </body>
 </html>

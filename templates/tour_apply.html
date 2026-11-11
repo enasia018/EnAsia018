@@ -106,7 +106,20 @@
                 </div>
                 <div class="form-group">
                     <label>Tour Package:</label>
-                    <input type="text" name="tour_package" value="Casiguran Aurora x Casapsapan Beach (2D1N)" readonly>
+                    {% set selected_pkg = request.args.get('package', 'Casiguran Aurora x Casapsapan Beach (2D1N)') %}
+                    <select name="tour_package" required>
+                        {% for pkg in [
+                            'Casiguran Aurora x Casapsapan Beach (2D1N)',
+                            'Baguio (2D1N)',
+                            'Ilocos Sur + Ilocos Norte (3D2N)',
+                            'Jomalig Island (3D2N)',
+                            'Calayan Island (4D3N)',
+                            'Kalanggaman, Tacloban, Pink Beach Matnog & Albay (4D3N)',
+                            'Burias Island (2D1N)'
+                        ] %}
+                            <option value="{{ pkg }}" {% if selected_pkg == pkg %}selected{% endif %}>{{ pkg }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Date of Tour:</label>
