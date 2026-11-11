@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fbfaf7">
+    <title>Bolinao Pangasinan Tour Package | EnAsia Tourist Transport</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=13) }}">
+</head>
+<body class="tour-detail-page">
+    <main class="tour-detail">
+        <a class="tour-back-link" href="{{ url_for('tour_package') }}">← All Tour Packages</a>
+
+        <header class="tour-detail-header">
+            <p class="tour-selection-eyebrow">EnAsia Tour Package</p>
+            <h1>Bolinao Pangasinan</h1>
+            <p class="tour-detail-subtitle">Tour details to follow · Photo gallery preview</p>
+        </header>
+
+        <section class="tour-detail-section" aria-labelledby="bolinao-photos">
+            <h2 id="bolinao-photos">Tour Photos</h2>
+            <div class="tour-photo-grid">
+                <figure class="tour-photo-card">
+                    <img src="{{ url_for('static', filename='images/bolinao1.jpg') }}" alt="Bolinao Pangasinan Tour Group Photo">
+                </figure>
+                <figure class="tour-photo-card">
+                    <img src="{{ url_for('static', filename='images/bolinao2.jpg') }}" alt="EnAsia Tourist Transport Van in Bolinao">
+                </figure>
+                <figure class="tour-photo-card">
+                    <img src="{{ url_for('static', filename='images/bolinao3.jpg') }}" alt="Bolinao Pangasinan Beach Photo">
+                </figure>
+            </div>
+        </section>
+
+        <section class="tour-detail-section tour-notes" aria-labelledby="bolinao-details">
+            <h2 id="bolinao-details">Package Details</h2>
+            <p style="margin: 0; color: var(--muted);">Full itinerary, inclusions, and booking details for Bolinao Pangasinan will follow soon.</p>
+        </section>
+
+        <a class="tour-back-link tour-detail-back-bottom" href="{{ url_for('tour_package') }}">← Browse all tour packages</a>
+    </main>
+</body>
+</html>

@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Directory — EnAsia Admin</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 28px 32px;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #f4f7f8;
+            color: #102a33;
+        }
+        .top-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .eyebrow {
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #52737c;
+            margin-bottom: 4px;
+        }
+        .page-title {
+            font-size: 1.9rem;
+            font-weight: 800;
+            margin: 0;
+            color: #0d232a;
+            letter-spacing: -0.02em;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-outline {
+            background: #ffffff;
+            color: #143642;
+            border: 1px solid #d4e0e3;
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .btn-outline:hover {
+            background: #eef4f6;
+            border-color: #b7cbd0;
+        }
+        .btn-primary {
+            background: #0f4c5c;
+            color: #ffffff;
+            border: 1px solid #0f4c5c;
+            border-radius: 10px;
+            padding: 10px 18px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s;
+        }
+        .btn-primary:hover {
+            background: #0b3946;
+        }
+        .btn-danger-outline {
+            background: #fff5f5;
+            color: #c53030;
+            border: 1px solid #feb2b2;
+            border-radius: 8px;
+            padding: 7px 13px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-danger-outline:hover {
+            background: #fed7d7;
+        }
+        .btn-warn-outline {
+            background: #fffaf0;
+            color: #c05621;
+            border: 1px solid #fbd38d;
+            border-radius: 8px;
+            padding: 7px 13px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-warn-outline:hover {
+            background: #feebc8;
+        }
+
+        .notice {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .notice-success {
+            background: #e6f4ea;
+            border: 1px solid #b7dfc4;
+            color: #1b5e20;
+        }
+        .notice-error {
+            background: #fce8e6;
+            border: 1px solid #f5c2c0;
+            color: #a50e0e;
+        }
+
+        /* Split Layout */
+        .directory-layout {
+            display: grid;
+            grid-template-columns: 440px 1fr;
+            gap: 22px;
+            align-items: start;
+        }
+        @media (max-width: 1024px) {
+            .directory-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel-card {
+            background: #ffffff;
+            border: 1px solid #e3ecef;
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(15, 44, 54, 0.04);
+            padding: 22px;
+        }
+
+        /* Left Panel */
+        .search-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #143642;
+            margin-bottom: 8px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #d4e0e3;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            color: #102a33;
+            outline: none;
+        }
+        .search-input:focus {
+            border-color: #0f4c5c;
+            box-shadow: 0 0 0 3px rgba(15, 76, 92, 0.1);
+        }
+        .member-count-text {
+            font-size: 0.78rem;
+            color: #637d84;
+            margin: 12px 0 10px;
+        }
+
+        .member-list-container {
+            max-height: 640px;
+            overflow-y: auto;
+            border-top: 1px solid #eef3f5;
+        }
+        .member-list-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .member-list-table th {
+            background: #f7fafb;
+            color: #5b767e;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            text-align: left;
+            padding: 10px 10px;
+            position: sticky;
+            top: 0;
+            border-bottom: 1px solid #e6eff1;
+        }
+        .member-list-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #f0f5f6;
+            font-size: 0.84rem;
+            vertical-align: middle;
+        }
+        .member-row {
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+        .member-row:hover {
+            background: #f4f9fa;
+        }
+        .member-row.selected {
+            background: #eaf3f5;
+        }
+        .m-name {
+            font-weight: 800;
+            color: #102a33;
+            font-size: 0.84rem;
+            display: block;
+            text-transform: uppercase;
+        }
+        .m-code {
+            color: #6c8890;
+            font-size: 0.74rem;
+            margin-top: 2px;
+            display: block;
+        }
+        .status-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 700;
+        }
+        .status-pill.active {
+            background: #e3f5ec;
+            color: #1e7045;
+        }
+        .status-pill.inactive {
+            background: #fde8e8;
+            color: #b91c1c;
+        }
+
+        /* Right Profile Panel */
+        .profile-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #edf2f4;
+        }
+        .profile-eyebrow {
+            font-size: 0.73rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #5b767e;
+        }
+        .profile-name {
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: #0d232a;
+            margin: 6px 0 6px;
+            text-transform: uppercase;
+        }
+        .profile-code {
+            font-size: 0.92rem;
+            color: #6c8890;
+        }
+        .profile-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .section-heading {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #0d232a;
+            margin: 22px 0 18px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px 36px;
+        }
+        @media (max-width: 640px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .detail-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .detail-label {
+            font-size: 0.76rem;
+            color: #7b939a;
+            font-weight: 600;
+        }
+        .detail-value {
+            font-size: 0.96rem;
+            color: #0d232a;
+            font-weight: 700;
+        }
+
+        /* Modals */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 28, 34, 0.55);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-card {
+            background: #ffffff;
+            border-radius: 16px;
+            max-width: 760px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 28px;
+            position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+        }
+        .modal-card.small {
+            max-width: 440px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #edf2f4;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: #0d232a;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            color: #6c8890;
+            cursor: pointer;
+        }
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px 18px;
+        }
+        @media (max-width: 640px) {
+            .form-grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+        .form-field label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #2c4a52;
+            margin-bottom: 5px;
+        }
+        .form-field input,
+        .form-field select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #cddbe0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #102a33;
+        }
+        .form-field input:focus,
+        .form-field select:focus {
+            border-color: #0f4c5c;
+            outline: none;
+        }
+        .modal-footer {
+            margin-top: 24px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-header">
+        <div>
+            <div class="eyebrow">MEMBER RECORDS</div>
+            <h1 class="page-title">Member directory</h1>
+        </div>
+        <div class="header-actions">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn-outline">← Admin Dashboard</a>
+            <a href="{{ url_for('members') }}" target="_blank" class="btn-outline">Public Member Portal ↗</a>
+            <a href="{{ url_for('admin_export_members') }}" class="btn-outline">Export Excel</a>
+            <button type="button" class="btn-outline" onclick="document.getElementById('importModal').style.display='flex'">Import Excel</button>
+            <button type="button" class="btn-primary" onclick="document.getElementById('addMemberModal').style.display='flex'">+ Add member</button>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="notice notice-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="directory-layout">
+        <!-- LEFT PANEL: Search & Member List -->
+        <div class="panel-card">
+            <label class="search-label" for="memberSearch">Search members</label>
+            <input
+                type="text"
+                id="memberSearch"
+                class="search-input"
+                placeholder="Name, member code, plate, MV file, case, or batch"
+                oninput="filterMemberRows()"
+            >
+            <div class="member-count-text">
+                <span id="visibleCount">{{ members | length }}</span> members
+            </div>
+
+            <div class="member-list-container">
+                <table class="member-list-table" id="memberListTable">
+                    <thead>
+                        <tr>
+                            <th>MEMBER</th>
+                            <th>UNIT / VEHICLE</th>
+                            <th>PLATE</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in members %}
+                        <tr class="member-row {{ 'selected' if selected_member and selected_member.id == m.id else '' }}"
+                            data-search="{{ (m.full_name ~ ' ' ~ m.member_code ~ ' ' ~ (m.plate_number or '') ~ ' ' ~ (m.mv_file_number or '') ~ ' ' ~ (m.franchise_case or '') ~ ' ' ~ (m.batch_number or '') ~ ' ' ~ (m.unit_name or '') ~ ' ' ~ (m.vehicle or '')) | lower }}"
+                            onclick="window.location.href='{{ url_for('admin_members_page', selected_id=m.id) }}'">
+                            <td>
+                                <span class="m-name">{{ m.full_name }}</span>
+                                <span class="m-code">{{ m.member_code }}</span>
+                            </td>
+                            <td>{{ m.unit_name or m.vehicle or '—' }}</td>
+                            <td>{{ m.plate_number or '—' }}</td>
+                            <td>
+                                <span class="status-pill {{ 'active' if m.status == 'Active' else 'inactive' }}">
+                                    {{ m.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align:center; padding: 32px; color:#6c8890;">
+                                No members found. Click <strong>+ Add member</strong> or <strong>Import Excel</strong>.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Selected Member Profile -->
+        <div class="panel-card">
+            {% if selected_member %}
+            <div class="profile-top">
+                <div>
+                    <div class="profile-eyebrow">MEMBER PROFILE · {{ selected_member.status | upper }}</div>
+                    <h2 class="profile-name">{{ selected_member.full_name }}</h2>
+                    <div class="profile-code">{{ selected_member.member_code }}</div>
+                </div>
+                <div class="profile-actions">
+                    <button type="button" class="btn-warn-outline" onclick="document.getElementById('resetPwModal').style.display='flex'">
+                        🔑 Reset Password
+                    </button>
+                    <button type="button" class="btn-outline" style="padding:7px 14px; font-size:0.82rem;" onclick="document.getElementById('editMemberModal').style.display='flex'">
+                        Edit
+                    </button>
+                    <form method="POST" action="{{ url_for('admin_delete_member', member_db_id=selected_member.id) }}"
+                          onsubmit="return confirm('Permanently delete {{ selected_member.full_name | e }}?');" style="display:inline;">
+                        <button type="submit" class="btn-danger-outline">Delete</button>
+                    </form>
+                </div>
+            </div>
+
+            <h3 class="section-heading">Member and franchise details</h3>
+
+            <div class="details-grid">
+                <div class="detail-field">
+                    <span class="detail-label">Address</span>
+                    <span class="detail-value">{{ selected_member.address or '—' }}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Member ID</span>
+                    <span class="detail-value">{{ selected_member.member_id_no or '—' }}</span>
+                </div>
+
+                <div class="detail-field">
+                    <span class="detail-label">Driver license</span>
+                    <span class="detail-value">{{ selected_member.driver_license or '—' }}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Unit name</span>
+                    <span class="detail-value">{{ selected_member.unit_name or '—' }}</span>
+                </div>
+
+                <div class="detail-field">
+                    <span class="detail-label">Vehicle</span>
+                    <span class="detail-value">{{ selected_member.vehicle or '—' }}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Plate number</span>
+                    <span class="detail-value">{{ selected_member.plate_number or '—' }}</span>
+                </div>
+
+                <div class="detail-field">
+                    <span class="detail-label">MV file number</span>
+                    <span class="detail-value">{{ selected_member.mv_file_number or '—' }}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Franchise case</span>
+                    <span class="detail-value">{{ selected_member.franchise_case or '—' }}</span>
+                </div>
+
+                <div class="detail-field">
+                    <span class="detail-label">Batch number</span>
+                    <span class="detail-value">{{ selected_member.batch_number or '—' }}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Franchise start date</span>
+                    <span class="detail-value">{{ selected_member.franchise_start_date or '—' }}</span>
+                </div>
+
+                <div class="detail-field">
+                    <span class="detail-label">Monthly dues</span>
+                    <span class="detail-value">{{ selected_member.monthly_dues or '₱0.00' }}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Due day</span>
+                    <span class="detail-value">{{ selected_member.due_day or '—' }}</span>
+                </div>
+
+                <div class="detail-field">
+                    <span class="detail-label">MOA status</span>
+                    <span class="detail-value">{{ selected_member.moa_status or '—' }}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Lease status</span>
+                    <span class="detail-value">{{ selected_member.lease_status or '—' }}</span>
+                </div>
+
+                <div class="detail-field">
+                    <span class="detail-label">PA status</span>
+                    <span class="detail-value">{{ selected_member.pa_status or 'Not recorded' }}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">CPC status</span>
+                    <span class="detail-value">{{ selected_member.cpc_status or 'Not recorded' }}</span>
+                </div>
+
+                <div class="detail-field">
+                    <span class="detail-label">Original OR/CR</span>
+                    <span class="detail-value">{{ selected_member.original_or_cr or '—' }}</span>
+                </div>
+                <div class="detail-field">
+                    <span class="detail-label">Facebook name</span>
+                    <span class="detail-value">{{ selected_member.facebook_name or '—' }}</span>
+                </div>
+
+                <div class="detail-field">
+                    <span class="detail-label">Terms</span>
+                    <span class="detail-value">{{ selected_member.terms or '—' }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div style="text-align:center; padding: 64px 20px; color:#6c8890;">
+                <h3 style="margin-bottom:8px; color:#102a33;">No Member Selected</h3>
+                <p>Add a member using the <strong>+ Add member</strong> button at the top right, or import your Excel list.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ADD MEMBER MODAL -->
+    <div id="addMemberModal" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Add New Member</h3>
+                <button class="modal-close" onclick="document.getElementById('addMemberModal').style.display='none'">✕</button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_add_member') }}">
+                <div class="form-grid-2">
+                    <div class="form-field">
+                        <label>Full Name *</label>
+                        <input type="text" name="full_name" placeholder="e.g. ABEGAIL MANALAC" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Member Code (Login ID) *</label>
+                        <input type="text" name="member_code" value="{{ next_code }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Member Password *</label>
+                        <input type="text" name="password" placeholder="Assign login password" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Status</label>
+                        <select name="status">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>Address</label>
+                        <input type="text" name="address" placeholder="e.g. Taytay Rizal">
+                    </div>
+                    <div class="form-field">
+                        <label>Member ID</label>
+                        <input type="text" name="member_id_no" placeholder="Optional secondary ID">
+                    </div>
+                    <div class="form-field">
+                        <label>Driver license</label>
+                        <input type="text" name="driver_license">
+                    </div>
+                    <div class="form-field">
+                        <label>Unit name</label>
+                        <input type="text" name="unit_name">
+                    </div>
+                    <div class="form-field">
+                        <label>Vehicle</label>
+                        <input type="text" name="vehicle" placeholder="e.g. 2024">
+                    </div>
+                    <div class="form-field">
+                        <label>Plate number</label>
+                        <input type="text" name="plate_number" placeholder="e.g. NIQ 7222">
+                    </div>
+                    <div class="form-field">
+                        <label>MV file number</label>
+                        <input type="text" name="mv_file_number">
+                    </div>
+                    <div class="form-field">
+                        <label>Franchise case</label>
+                        <input type="text" name="franchise_case" placeholder="e.g. 24-21644">
+                    </div>
+                    <div class="form-field">
+                        <label>Batch number</label>
+                        <input type="text" name="batch_number" placeholder="e.g. BATCH 2">
+                    </div>
+                    <div class="form-field">
+                        <label>Franchise start date</label>
+                        <input type="text" name="franchise_start_date" placeholder="YYYY-MM-DD">
+                    </div>
+                    <div class="form-field">
+                        <label>Monthly dues</label>
+                        <input type="text" name="monthly_dues" value="₱0.00">
+                    </div>
+                    <div class="form-field">
+                        <label>Due day</label>
+                        <input type="text" name="due_day">
+                    </div>
+                    <div class="form-field">
+                        <label>MOA status</label>
+                        <input type="text" name="moa_status">
+                    </div>
+                    <div class="form-field">
+                        <label>Lease status</label>
+                        <input type="text" name="lease_status">
+                    </div>
+                    <div class="form-field">
+                        <label>PA status</label>
+                        <input type="text" name="pa_status" value="Not recorded">
+                    </div>
+                    <div class="form-field">
+                        <label>CPC status</label>
+                        <input type="text" name="cpc_status" value="Not recorded">
+                    </div>
+                    <div class="form-field">
+                        <label>Original OR/CR</label>
+                        <input type="text" name="original_or_cr">
+                    </div>
+                    <div class="form-field">
+                        <label>Facebook name</label>
+                        <input type="text" name="facebook_name">
+                    </div>
+                    <div class="form-field">
+                        <label>Terms</label>
+                        <input type="text" name="terms" placeholder="e.g. PAID">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline" onclick="document.getElementById('addMemberModal').style.display='none'">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if selected_member %}
+    <!-- EDIT MEMBER MODAL -->
+    <div id="editMemberModal" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Edit Member — {{ selected_member.full_name }}</h3>
+                <button class="modal-close" onclick="document.getElementById('editMemberModal').style.display='none'">✕</button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_edit_member', member_db_id=selected_member.id) }}">
+                <div class="form-grid-2">
+                    <div class="form-field">
+                        <label>Full Name *</label>
+                        <input type="text" name="full_name" value="{{ selected_member.full_name }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Member Code (Login ID) *</label>
+                        <input type="text" name="member_code" value="{{ selected_member.member_code }}" required>
+                    </div>
+                    <div class="form-field">
+                        <label>Status</label>
+                        <select name="status">
+                            <option value="Active" {{ 'selected' if selected_member.status == 'Active' }}>Active</option>
+                            <option value="Inactive" {{ 'selected' if selected_member.status == 'Inactive' }}>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>New Password (leave blank to keep current)</label>
+                        <input type="text" name="password" placeholder="Enter new password to replace">
+                    </div>
+                    <div class="form-field">
+                        <label>Address</label>
+                        <input type="text" name="address" value="{{ selected_member.address or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Member ID</label>
+                        <input type="text" name="member_id_no" value="{{ selected_member.member_id_no or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Driver license</label>
+                        <input type="text" name="driver_license" value="{{ selected_member.driver_license or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Unit name</label>
+                        <input type="text" name="unit_name" value="{{ selected_member.unit_name or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Vehicle</label>
+                        <input type="text" name="vehicle" value="{{ selected_member.vehicle or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Plate number</label>
+                        <input type="text" name="plate_number" value="{{ selected_member.plate_number or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>MV file number</label>
+                        <input type="text" name="mv_file_number" value="{{ selected_member.mv_file_number or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Franchise case</label>
+                        <input type="text" name="franchise_case" value="{{ selected_member.franchise_case or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Batch number</label>
+                        <input type="text" name="batch_number" value="{{ selected_member.batch_number or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Franchise start date</label>
+                        <input type="text" name="franchise_start_date" value="{{ selected_member.franchise_start_date or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Monthly dues</label>
+                        <input type="text" name="monthly_dues" value="{{ selected_member.monthly_dues or '₱0.00' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Due day</label>
+                        <input type="text" name="due_day" value="{{ selected_member.due_day or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>MOA status</label>
+                        <input type="text" name="moa_status" value="{{ selected_member.moa_status or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Lease status</label>
+                        <input type="text" name="lease_status" value="{{ selected_member.lease_status or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>PA status</label>
+                        <input type="text" name="pa_status" value="{{ selected_member.pa_status or 'Not recorded' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>CPC status</label>
+                        <input type="text" name="cpc_status" value="{{ selected_member.cpc_status or 'Not recorded' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Original OR/CR</label>
+                        <input type="text" name="original_or_cr" value="{{ selected_member.original_or_cr or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Facebook name</label>
+                        <input type="text" name="facebook_name" value="{{ selected_member.facebook_name or '' }}">
+                    </div>
+                    <div class="form-field">
+                        <label>Terms</label>
+                        <input type="text" name="terms" value="{{ selected_member.terms or '' }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline" onclick="document.getElementById('editMemberModal').style.display='none'">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RESET PASSWORD MODAL -->
+    <div id="resetPwModal" class="modal-backdrop">
+        <div class="modal-card small">
+            <div class="modal-header">
+                <h3>🔑 Reset Member Password</h3>
+                <button class="modal-close" onclick="document.getElementById('resetPwModal').style.display='none'">✕</button>
+            </div>
+            <p style="margin-top:0; color:#4b676e; font-size:0.9rem;">
+                Assign a new password for <strong>{{ selected_member.full_name }}</strong> (<code>{{ selected_member.member_code }}</code>).
+            </p>
+            <form method="POST" action="{{ url_for('admin_reset_member_password', member_db_id=selected_member.id) }}">
+                <div class="form-field">
+                    <label>New Password *</label>
+                    <input type="text" name="new_password" placeholder="Enter new password" required autocomplete="off">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline" onclick="document.getElementById('resetPwModal').style.display='none'">Cancel</button>
+                    <button type="submit" class="btn-primary">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- IMPORT EXCEL / CSV MODAL -->
+    <div id="importModal" class="modal-backdrop">
+        <div class="modal-card small">
+            <div class="modal-header">
+                <h3>Import Members (Excel / CSV)</h3>
+                <button class="modal-close" onclick="document.getElementById('importModal').style.display='none'">✕</button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_import_members') }}" enctype="multipart/form-data">
+                <div class="form-field" style="margin-bottom:14px;">
+                    <label>Select Excel (.xlsx) or CSV (.csv) file *</label>
+                    <input type="file" name="excel_file" accept=".xlsx,.csv" required>
+                </div>
+                <div class="form-field">
+                    <label>Default Password for Imported Members</label>
+                    <input type="text" name="default_password" value="enasia2026" required>
+                    <small style="color:#6c8890; font-size:0.76rem; display:block; margin-top:4px;">
+                        Used when a row does not have a "Password" column. You can reset individual passwords anytime.
+                    </small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline" onclick="document.getElementById('importModal').style.display='none'">Cancel</button>
+                    <button type="submit" class="btn-primary">Upload & Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function filterMemberRows() {
+            const q = document.getElementById('memberSearch').value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#memberListTable tbody tr.member-row');
+            let count = 0;
+            rows.forEach(row => {
+                const hay = row.getAttribute('data-search') || '';
+                const match = !q || hay.includes(q);
+                row.style.display = match ? '' : 'none';
+                if (match) count++;
+            });
+            document.getElementById('visibleCount').textContent = count;
+        }
+    </script>
+</body>
+</html>

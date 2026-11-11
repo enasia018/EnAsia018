@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#fbfaf7">
     <title>Tour Packages | EnAsia Tourist Transport</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=11) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=13) }}">
 </head>
 <body class="tour-selection-page">
     <main class="tour-selection">
@@ -95,6 +95,16 @@
                     <small>Island hopping · 2 days, 1 night</small>
                 </span>
                 <span class="tour-package-status">View package <span aria-hidden="true">→</span></span>
+            </a>
+
+            <a class="tour-package-card"
+               href="{{ url_for('tour_package_detail', package_slug='bolinao-pangasinan') }}">
+                <span class="tour-package-number">09</span>
+                <span class="tour-package-copy">
+                    <strong>Bolinao Pangasinan</strong>
+                    <small>Tour photos available · Details to follow</small>
+                </span>
+                <span class="tour-package-status">View photos <span aria-hidden="true">→</span></span>
             </a>
         </div>
     </main>

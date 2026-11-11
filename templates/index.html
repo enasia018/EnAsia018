@@ -24,6 +24,7 @@
             <a href="{{ url_for('franchise') }}">Franchise</a>
             <a href="{{ url_for('vans_list') }}">Our Vans</a>
             <a href="{{ url_for('check_status') }}">Check Status</a>
+            <a href="{{ url_for('members') }}">Members</a>
             <a href="{{ url_for('gcash_page') }}" class="nav-payment">Pay via GCash</a>
         </nav>
     </header>
@@ -59,6 +60,11 @@
             <a href="{{ url_for('franchise') }}" class="service-link">
                 <span class="service-number">03</span>
                 <span><strong>Franchise</strong><small>Grow with EnAsia</small></span>
+                <span class="service-arrow" aria-hidden="true">↗</span>
+            </a>
+            <a href="{{ url_for('members') }}" class="service-link">
+                <span class="service-number">04</span>
+                <span><strong>Members Portal</strong><small>View your franchise details</small></span>
                 <span class="service-arrow" aria-hidden="true">↗</span>
             </a>
         </section>

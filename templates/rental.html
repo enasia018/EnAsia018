@@ -76,7 +76,7 @@
             background-color: #777;
         }
     </style>
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=5) }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=14) }}">
     </head>
     <body class="rental-page">
 
@@ -139,9 +139,6 @@
 
         <label>Pickup Time:</label>
         <input type="time" name="pickup_time" required>
-
-        <label>Number of Nights (minimum 1):</label>
-        <input type="number" name="nights" min="1" value="1" required>
 
         <label for="pickupLocation">Pickup Location (type your pickup place):</label>
         <input type="text" name="pickup" id="pickupLocation" required>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Members Portal — EnAsia Tourist Transport</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 32px 20px;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #f4f7f8;
+            color: #102a33;
+            min-height: 100vh;
+        }
+        .top-nav {
+            max-width: 920px;
+            margin: 0 auto 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .back-link {
+            color: #0f4c5c;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Login Card */
+        .login-card {
+            max-width: 440px;
+            margin: 48px auto;
+            background: #ffffff;
+            border: 1px solid #e3ecef;
+            border-radius: 16px;
+            box-shadow: 0 8px 28px rgba(15, 44, 54, 0.06);
+            padding: 36px 32px;
+        }
+        .login-eyebrow {
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #52737c;
+            margin-bottom: 6px;
+        }
+        .login-title {
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: #0d232a;
+            margin: 0 0 8px;
+        }
+        .login-subtitle {
+            font-size: 0.9rem;
+            color: #5b767e;
+            margin: 0 0 24px;
+            line-height: 1.5;
+        }
+        .alert-error {
+            background: #fce8e6;
+            border: 1px solid #f5c2c0;
+            color: #a50e0e;
+            padding: 11px 14px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #143642;
+            margin-bottom: 6px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #cddbe0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            color: #102a33;
+            outline: none;
+        }
+        .form-group input:focus {
+            border-color: #0f4c5c;
+            box-shadow: 0 0 0 3px rgba(15, 76, 92, 0.1);
+        }
+        .btn-submit {
+            width: 100%;
+            background: #0f4c5c;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+        .btn-submit:hover {
+            background: #0b3946;
+        }
+
+        /* Member Profile Card (matches screenshot #1) */
+        .profile-card {
+            max-width: 920px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e3ecef;
+            border-radius: 16px;
+            box-shadow: 0 6px 24px rgba(15, 44, 54, 0.05);
+            padding: 32px 36px;
+        }
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            padding-bottom: 22px;
+            border-bottom: 1px solid #edf2f4;
+        }
+        .profile-eyebrow {
+            font-size: 0.74rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #5b767e;
+        }
+        .profile-name {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #0d232a;
+            margin: 6px 0 6px;
+            text-transform: uppercase;
+        }
+        .profile-code {
+            font-size: 0.94rem;
+            color: #6c8890;
+        }
+        .btn-logout {
+            background: #ffffff;
+            color: #143642;
+            border: 1px solid #d4e0e3;
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .btn-logout:hover {
+            background: #eef4f6;
+        }
+        .section-heading {
+            font-size: 1.08rem;
+            font-weight: 800;
+            color: #0d232a;
+            margin: 24px 0 20px;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px 40px;
+        }
+        @media (max-width: 640px) {
+            .profile-card {
+                padding: 24px 20px;
+            }
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .detail-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .detail-label {
+            font-size: 0.77rem;
+            color: #7b939a;
+            font-weight: 600;
+        }
+        .detail-value {
+            font-size: 0.98rem;
+            color: #0d232a;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-nav">
+        <a href="{{ url_for('home') }}" class="back-link">← Back to EnAsia Home</a>
+    </div>
+
+    {% if not member %}
+    <!-- LOGIN FORM -->
+    <div class="login-card">
+        <div class="login-eyebrow">ENASIA TOURIST FRANCHISE</div>
+        <h1 class="login-title">Member Portal</h1>
+        <p class="login-subtitle">
+            Enter your Member Code (e.g. <strong>ENS-00017</strong>) and the password provided by EnAsia to view your franchise details.
+        </p>
+
+        {% if error %}
+        <div class="alert-error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('members') }}">
+            <div class="form-group">
+                <label for="member_id">Member Code / ID</label>
+                <input type="text" id="member_id" name="member_id" placeholder="e.g. ENS-00017" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-submit">View My Details</button>
+        </form>
+    </div>
+
+    {% else %}
+    <!-- MEMBER PROFILE VIEW (Screenshot #1 layout, read-only, no payments section) -->
+    <div class="profile-card">
+        <div class="profile-header">
+            <div>
+                <div class="profile-eyebrow">MEMBER PROFILE · {{ member.status | upper }}</div>
+                <h1 class="profile-name">{{ member.full_name }}</h1>
+                <div class="profile-code">{{ member.member_code }}</div>
+            </div>
+            <a href="{{ url_for('members') }}" class="btn-logout">Log Out</a>
+        </div>
+
+        <h2 class="section-heading">Member and franchise details</h2>
+
+        <div class="details-grid">
+            <div class="detail-field">
+                <span class="detail-label">Address</span>
+                <span class="detail-value">{{ member.address or '—' }}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">Member ID</span>
+                <span class="detail-value">{{ member.member_id_no or '—' }}</span>
+            </div>
+
+            <div class="detail-field">
+                <span class="detail-label">Driver license</span>
+                <span class="detail-value">{{ member.driver_license or '—' }}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">Unit name</span>
+                <span class="detail-value">{{ member.unit_name or '—' }}</span>
+            </div>
+
+            <div class="detail-field">
+                <span class="detail-label">Vehicle</span>
+                <span class="detail-value">{{ member.vehicle or '—' }}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">Plate number</span>
+                <span class="detail-value">{{ member.plate_number or '—' }}</span>
+            </div>
+
+            <div class="detail-field">
+                <span class="detail-label">MV file number</span>
+                <span class="detail-value">{{ member.mv_file_number or '—' }}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">Franchise case</span>
+                <span class="detail-value">{{ member.franchise_case or '—' }}</span>
+            </div>
+
+            <div class="detail-field">
+                <span class="detail-label">Batch number</span>
+                <span class="detail-value">{{ member.batch_number or '—' }}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">Franchise start date</span>
+                <span class="detail-value">{{ member.franchise_start_date or '—' }}</span>
+            </div>
+
+            <div class="detail-field">
+                <span class="detail-label">Monthly dues</span>
+                <span class="detail-value">{{ member.monthly_dues or '₱0.00' }}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">Due day</span>
+                <span class="detail-value">{{ member.due_day or '—' }}</span>
+            </div>
+
+            <div class="detail-field">
+                <span class="detail-label">MOA status</span>
+                <span class="detail-value">{{ member.moa_status or '—' }}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">Lease status</span>
+                <span class="detail-value">{{ member.lease_status or '—' }}</span>
+            </div>
+
+            <div class="detail-field">
+                <span class="detail-label">PA status</span>
+                <span class="detail-value">{{ member.pa_status or 'Not recorded' }}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">CPC status</span>
+                <span class="detail-value">{{ member.cpc_status or 'Not recorded' }}</span>
+            </div>
+
+            <div class="detail-field">
+                <span class="detail-label">Original OR/CR</span>
+                <span class="detail-value">{{ member.original_or_cr or '—' }}</span>
+            </div>
+            <div class="detail-field">
+                <span class="detail-label">Facebook name</span>
+                <span class="detail-value">{{ member.facebook_name or '—' }}</span>
+            </div>
+
+            <div class="detail-field">
+                <span class="detail-label">Terms</span>
+                <span class="detail-value">{{ member.terms or '—' }}</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</body>
+</html>
