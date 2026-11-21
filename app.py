@@ -448,9 +448,16 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
-from office_db import init_office_db, _models as office_models, _now_iso
+from office_db import (
+    init_office_db,
+    _models as office_models,
+    _now_iso,
+    _sync_office_member_to_portal,
+    sync_all_office_members_to_portal,
+    sync_portal_member_to_office,
+)
 
-init_office_db(app, db)
+init_office_db(app, db, portal_member_model=Member)
 
 ADMIN_USER = "admin"
 ADMIN_PASS = "enasia2026"
@@ -969,6 +976,15 @@ def members():
         ).first()
 
         if found and found.check_password(password):
+            # Pull latest profile details from EnAsia Database System (OfficeMember) if present
+            OfficeMember = office_models.get("OfficeMember")
+            if OfficeMember is not None:
+                om = OfficeMember.query.filter(
+                    db.func.lower(OfficeMember.member_code) == (found.member_code or "").lower()
+                ).first()
+                if om:
+                    _sync_office_member_to_portal(om)
+                    db.session.commit()
             if found.check_password(DEFAULT_MEMBER_PASSWORD) or found.check_password("enasia2026"):
                 found.must_change_password = True
                 db.session.commit()
@@ -980,6 +996,15 @@ def members():
         member = db.session.get(Member, session.get("member_logged_in_id"))
         if member is None:
             session.pop("member_logged_in_id", None)
+        else:
+            OfficeMember = office_models.get("OfficeMember")
+            if OfficeMember is not None:
+                om = OfficeMember.query.filter(
+                    db.func.lower(OfficeMember.member_code) == (member.member_code or "").lower()
+                ).first()
+                if om:
+                    _sync_office_member_to_portal(om)
+                    db.session.commit()
 
     return render_template("members.html", member=member, error=error)
 
@@ -1320,6 +1345,7 @@ def admin_add_member():
     )
     new_member.set_password(password)
     db.session.add(new_member)
+    sync_portal_member_to_office(new_member)
     db.session.commit()
     sync_local_seed_file()
     flash(f"Member {full_name} ({member_code}) added successfully.", "success")
@@ -1336,6 +1362,7 @@ def admin_edit_member(member_db_id):
         flash("Member not found.", "error")
         return redirect(url_for("admin_members_page"))
 
+    old_code = member.member_code
     new_code = request.form.get("member_code", "").strip().upper()
     if new_code and new_code != member.member_code:
         conflict = Member.query.filter(
@@ -1374,6 +1401,7 @@ def admin_edit_member(member_db_id):
         member.set_password(new_password)
         member.must_change_password = True
 
+    sync_portal_member_to_office(member, old_code=old_code)
     db.session.commit()
     sync_local_seed_file()
     flash(f"Updated profile for {member.full_name}.", "success")

@@ -107,7 +107,176 @@ UUID_RE = re.compile(r"^[0-9a-fA-F-]+$")
 
 _db = None
 _models = {}
+_portal_member_model = None
 _login_attempts = {}
+
+
+def _sync_office_member_to_portal(office_member, old_code=None, default_pw_hash=None, portal_by_code=None):
+    """Automatically mirror an OfficeMember record into the Member Portal / Members Directory table."""
+    if _portal_member_model is None or office_member is None:
+        return
+    PortalMember = _portal_member_model
+    code = (office_member.member_code or "").strip()
+    if not code:
+        return
+
+    portal_member = None
+    if portal_by_code is not None:
+        if old_code and old_code.strip().lower() != code.lower():
+            portal_member = portal_by_code.get(old_code.strip().lower())
+        if portal_member is None:
+            portal_member = portal_by_code.get(code.lower())
+    else:
+        if old_code and old_code.strip().lower() != code.lower():
+            portal_member = PortalMember.query.filter(
+                func.lower(PortalMember.member_code) == old_code.strip().lower()
+            ).first()
+        if portal_member is None:
+            portal_member = PortalMember.query.filter(
+                func.lower(PortalMember.member_code) == code.lower()
+            ).first()
+
+    vehicle_parts = [
+        p.strip()
+        for p in (
+            office_member.vehicle_make or "",
+            office_member.vehicle_model or "",
+            office_member.vehicle_year or "",
+        )
+        if p and p.strip()
+    ]
+    vehicle_str = " ".join(vehicle_parts) if vehicle_parts else None
+    dues_val = float(office_member.monthly_dues_amount or 0.0)
+    dues_str = f"₱{dues_val:,.2f}"
+    due_day_str = str(office_member.due_day) if office_member.due_day is not None else None
+
+    if portal_member is None:
+        portal_member = PortalMember(
+            member_code=code,
+            full_name=(office_member.full_name or "").strip() or code,
+            must_change_password=True,
+        )
+        if default_pw_hash:
+            portal_member.password_hash = default_pw_hash
+        else:
+            portal_member.set_password("Password123")
+        _db.session.add(portal_member)
+        if portal_by_code is not None:
+            portal_by_code[code.lower()] = portal_member
+
+    portal_member.member_code = code
+    portal_member.full_name = (office_member.full_name or "").strip() or portal_member.full_name
+    portal_member.status = (office_member.status or "Active").strip() or "Active"
+    portal_member.address = (office_member.address or "").strip() or None
+    portal_member.member_id_no = (office_member.id_number or "").strip() or None
+    portal_member.driver_license = (office_member.driver_license_number or "").strip() or None
+    portal_member.unit_name = (office_member.unit_name or "").strip() or None
+    if vehicle_str:
+        portal_member.vehicle = vehicle_str
+    portal_member.plate_number = (office_member.plate_number or "").strip() or None
+    portal_member.mv_file_number = (office_member.mv_file_number or "").strip() or None
+    portal_member.franchise_case = (office_member.franchise_case_number or "").strip() or None
+    portal_member.batch_number = (office_member.batch_number or "").strip() or None
+    portal_member.franchise_start_date = (office_member.franchise_start_date or "").strip() or None
+    portal_member.monthly_dues = dues_str
+    portal_member.due_day = due_day_str
+    portal_member.moa_status = (office_member.moa_status or "").strip() or None
+    portal_member.lease_status = (office_member.lease_status or "").strip() or None
+    portal_member.pa_status = (office_member.pa_status or "Not recorded").strip() or "Not recorded"
+    portal_member.cpc_status = (office_member.cpc_status or "Not recorded").strip() or "Not recorded"
+    portal_member.original_or_cr = (office_member.original_or_cr or "").strip() or None
+    portal_member.facebook_name = (office_member.facebook_name or "").strip() or None
+    portal_member.terms = (office_member.terms or "").strip() or None
+
+
+def sync_all_office_members_to_portal():
+    """Ensure all OfficeMember records are synced into the Member Portal / Members Directory table in a single batch."""
+    if _portal_member_model is None or "OfficeMember" not in _models:
+        return
+    OfficeMember = _models["OfficeMember"]
+    PortalMember = _portal_member_model
+    portal_by_code = {
+        (pm.member_code or "").strip().lower(): pm
+        for pm in PortalMember.query.all()
+        if pm.member_code
+    }
+    default_pw_hash = generate_password_hash("Password123")
+    for om in OfficeMember.query.all():
+        _sync_office_member_to_portal(
+            om, default_pw_hash=default_pw_hash, portal_by_code=portal_by_code
+        )
+    _db.session.commit()
+
+
+def sync_portal_member_to_office(portal_member, old_code=None):
+    """Also mirror any edits made in /admin/members back into OfficeMember so both stay identical."""
+    if portal_member is None or "OfficeMember" not in _models:
+        return
+    OfficeMember = _models["OfficeMember"]
+    code = (portal_member.member_code or "").strip()
+    if not code:
+        return
+
+    om = None
+    if old_code and old_code.strip().lower() != code.lower():
+        om = OfficeMember.query.filter(
+            func.lower(OfficeMember.member_code) == old_code.strip().lower()
+        ).first()
+    if om is None:
+        om = OfficeMember.query.filter(
+            func.lower(OfficeMember.member_code) == code.lower()
+        ).first()
+
+    ts = _now_iso()
+    dues_raw = (portal_member.monthly_dues or "0").replace("₱", "").replace(",", "").strip()
+    try:
+        dues_num = max(float(dues_raw), 0.0)
+    except ValueError:
+        dues_num = 0.0
+
+    due_day_num = None
+    if portal_member.due_day:
+        try:
+            dd = int(str(portal_member.due_day).strip())
+            if 1 <= dd <= 28:
+                due_day_num = dd
+        except ValueError:
+            due_day_num = None
+
+    if om is None:
+        om = OfficeMember(
+            id=str(uuid.uuid4()),
+            member_code=code,
+            full_name=(portal_member.full_name or "").strip() or code,
+            created_at=ts,
+            updated_at=ts,
+        )
+        _db.session.add(om)
+
+    om.member_code = code
+    om.full_name = (portal_member.full_name or "").strip() or om.full_name
+    om.status = (portal_member.status or "Active") if (portal_member.status in VALID_MEMBER_STATUSES) else "Active"
+    om.address = portal_member.address or ""
+    om.id_number = portal_member.member_id_no or ""
+    om.driver_license_number = portal_member.driver_license or ""
+    om.unit_name = portal_member.unit_name or ""
+    if portal_member.vehicle and not (om.vehicle_make or om.vehicle_model or om.vehicle_year):
+        om.vehicle_model = portal_member.vehicle
+    om.plate_number = portal_member.plate_number or ""
+    om.mv_file_number = portal_member.mv_file_number or ""
+    om.franchise_case_number = portal_member.franchise_case or ""
+    om.batch_number = portal_member.batch_number or ""
+    om.franchise_start_date = portal_member.franchise_start_date or ""
+    om.monthly_dues_amount = dues_num
+    om.due_day = due_day_num
+    om.moa_status = portal_member.moa_status or ""
+    om.lease_status = portal_member.lease_status or ""
+    om.pa_status = (portal_member.pa_status or "Not recorded") if (portal_member.pa_status in VALID_PA_CPC_STATUSES) else "Not recorded"
+    om.cpc_status = (portal_member.cpc_status or "Not recorded") if (portal_member.cpc_status in VALID_PA_CPC_STATUSES) else "Not recorded"
+    om.original_or_cr = portal_member.original_or_cr or ""
+    om.facebook_name = portal_member.facebook_name or ""
+    om.terms = portal_member.terms or ""
+    om.updated_at = ts
 
 
 class ApiError(Exception):
@@ -728,6 +897,7 @@ def _apply_import(imported, workbook_sha256):
                 409,
             )
 
+        default_pw_hash = generate_password_hash("Password123")
         for entry in imported["members"]:
             m_data = dict(entry["member"])
             if not m_data.get("member_code"):
@@ -741,6 +911,7 @@ def _apply_import(imported, workbook_sha256):
                     if field in m_data:
                         setattr(existing, field, m_data[field])
                 existing.updated_at = timestamp
+                target_om = existing
             else:
                 kwargs = {
                     "id": str(uuid.uuid4()),
@@ -758,7 +929,9 @@ def _apply_import(imported, workbook_sha256):
                         kwargs[field] = m_data.get(field) or "Not recorded"
                     else:
                         kwargs[field] = m_data.get(field, "") or ""
-                _db.session.add(OfficeMember(**kwargs))
+                target_om = OfficeMember(**kwargs)
+                _db.session.add(target_om)
+            _sync_office_member_to_portal(target_om, default_pw_hash=default_pw_hash)
             _db.session.flush()
 
         for entry in imported["payments"]:
@@ -1437,6 +1610,7 @@ def api_members():
         **member_data,
     )
     _db.session.add(new_member)
+    _sync_office_member_to_portal(new_member)
     _db.session.commit()
     return _json_response({"id": member_id}, 201)
 
@@ -1504,9 +1678,11 @@ def api_member_detail(member_id):
     if conflict:
         raise ApiError("That member code is already in use.", 409)
 
+    old_code = member.member_code
     for field in MEMBER_FIELDS:
         setattr(member, field, member_data[field])
     member.updated_at = _now_iso()
+    _sync_office_member_to_portal(member, old_code=old_code)
     _db.session.commit()
     return _json_response({"success": True})
 
@@ -1964,10 +2140,12 @@ def _seed_office_db_if_empty(app):
     _db.session.commit()
 
 
-def init_office_db(app, db):
+def init_office_db(app, db, portal_member_model=None):
     """Define SQLAlchemy models, register blueprint, create tables, and seed initial data."""
-    global _db
+    global _db, _portal_member_model
     _db = db
+    if portal_member_model is not None:
+        _portal_member_model = portal_member_model
 
     if not _models:
 
@@ -2118,5 +2296,9 @@ def init_office_db(app, db):
             db.session.rollback()
         try:
             _seed_office_db_if_empty(app)
+        except Exception:
+            db.session.rollback()
+        try:
+            sync_all_office_members_to_portal()
         except Exception:
             db.session.rollback()
