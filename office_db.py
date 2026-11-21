@@ -1564,6 +1564,41 @@ def api_export():
     )
 
 
+def _member_matches_search(m, raw_search):
+    """Match member fields with exact batch number matching and word/number boundaries."""
+    q = " ".join((raw_search or "").strip().lower().split())
+    if not q:
+        return True
+
+    batch_val = " ".join((m.batch_number or "").strip().lower().split())
+    if q.startswith("batch"):
+        if q == "batch":
+            return bool(batch_val)
+        if re.fullmatch(r"batch\s+\d+", q):
+            return batch_val == q
+        return batch_val == q or (
+            batch_val.startswith(q)
+            and (len(batch_val) == len(q) or not batch_val[len(q)].isdigit())
+        )
+
+    pattern_str = r"(?:^|[\s\-./,(])" + re.escape(q)
+    if q[-1].isdigit():
+        pattern_str += r"(?!\d)"
+    pattern = re.compile(pattern_str, re.IGNORECASE)
+
+    fields = (
+        m.full_name or "",
+        m.member_code or "",
+        m.plate_number or "",
+        m.mv_file_number or "",
+        m.franchise_case_number or "",
+        m.batch_number or "",
+        m.id_number or "",
+        m.driver_license_number or "",
+    )
+    return any(pattern.search(" ".join(f.strip().split())) for f in fields if f)
+
+
 @office_db_bp.route("/api/members", methods=["GET", "POST"])
 def api_members():
     OfficeMember = _models["OfficeMember"]
@@ -1571,24 +1606,15 @@ def api_members():
 
     if request.method == "GET":
         search = (request.args.get("search") or "").strip()
-        q = OfficeMember.query
+        all_ordered = OfficeMember.query.order_by(
+            func.lower(OfficeMember.full_name)
+        ).all()
         if search:
-            like = f"%{search}%"
-            q = q.filter(
-                or_(
-                    OfficeMember.full_name.ilike(like),
-                    OfficeMember.member_code.ilike(like),
-                    OfficeMember.plate_number.ilike(like),
-                    OfficeMember.mv_file_number.ilike(like),
-                    OfficeMember.franchise_case_number.ilike(like),
-                    OfficeMember.batch_number.ilike(like),
-                    OfficeMember.id_number.ilike(like),
-                    OfficeMember.driver_license_number.ilike(like),
-                )
-            )
-        members = (
-            q.order_by(func.lower(OfficeMember.full_name)).limit(500).all()
-        )
+            members = [
+                m for m in all_ordered if _member_matches_search(m, search)
+            ][:500]
+        else:
+            members = all_ordered[:500]
         return _json_response(
             {"members": [_serialize_member_summary(m) for m in members]}
         )
