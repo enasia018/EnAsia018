@@ -46,6 +46,7 @@ if database_url:
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url or "sqlite:///reservations.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
+app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
 
 db = SQLAlchemy(app)
 
@@ -189,6 +190,9 @@ class GCashPayment(db.Model):
     status = db.Column(db.String(50), default="Pending")
 
 
+DEFAULT_MEMBER_PASSWORD = "Password123"
+
+
 class Member(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     member_code = db.Column(db.String(30), unique=True, nullable=False)  # e.g. ENS-00017
@@ -214,6 +218,7 @@ class Member(db.Model):
     facebook_name = db.Column(db.String(150), nullable=True)
     terms = db.Column(db.String(100), nullable=True)
     password_hash = db.Column(db.String(256), nullable=False)
+    must_change_password = db.Column(db.Boolean, default=True, nullable=False)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -338,6 +343,21 @@ with app.app_context():
         if "schedule_note" not in van_columns:
             connection.execute(text("ALTER TABLE van ADD COLUMN schedule_note VARCHAR(500)"))
 
+    member_columns = {column["name"] for column in inspect(db.engine).get_columns("member")}
+    if "must_change_password" not in member_columns:
+        try:
+            with db.engine.begin() as connection:
+                if db.engine.dialect.name == "postgresql":
+                    connection.execute(
+                        text("ALTER TABLE member ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT TRUE")
+                    )
+                else:
+                    connection.execute(
+                        text("ALTER TABLE member ADD COLUMN must_change_password BOOLEAN NOT NULL DEFAULT 1")
+                    )
+        except Exception:
+            pass
+
     if not Van.query.first():
         db.session.add(
             Van(
@@ -407,13 +427,64 @@ with app.app_context():
                     original_or_cr=item.get("original_or_cr") or None,
                     facebook_name=item.get("facebook_name") or None,
                     terms=item.get("terms") or None,
+                    must_change_password=True,
                 )
-                m.set_password("enasia2026")
+                m.set_password(DEFAULT_MEMBER_PASSWORD)
                 db.session.add(m)
             db.session.commit()
 
+    # Automatically migrate any members still using the legacy 'enasia2026' default
+    # password to 'Password123' and require password change upon first login.
+    # Uses a single pre-computed hash and quick first-row check so startup is instant on Gunicorn/NeonDB.
+    try:
+        first_member = Member.query.order_by(Member.id).first()
+        if first_member and first_member.check_password("enasia2026"):
+            default_pw_hash = generate_password_hash(DEFAULT_MEMBER_PASSWORD)
+            for existing_member in Member.query.all():
+                if existing_member.check_password("enasia2026"):
+                    existing_member.password_hash = default_pw_hash
+                    existing_member.must_change_password = True
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+from office_db import init_office_db, _models as office_models, _now_iso
+
+init_office_db(app, db)
+
 ADMIN_USER = "admin"
 ADMIN_PASS = "enasia2026"
+STAFF_ROLES = ("Admin", "Editor", "View only")
+
+
+@app.before_request
+def enforce_admin_role_permissions():
+    """Enforce View-only and Editor role restrictions across /admin routes."""
+    path = request.path
+    if not path.startswith("/admin") or path.startswith("/admin/database"):
+        return None
+    if path == "/admin" or path == "/admin/logout" or path == "/admin/change-my-password":
+        return None
+    if not session.get("logged_in"):
+        return None
+
+    role = session.get("admin_role", "Admin")
+    # Admin-only user management routes
+    if path.startswith("/admin/users") and role != "Admin":
+        flash("Only an Administrator can manage staff user accounts.", "error")
+        return redirect(request.referrer or url_for("admin_dashboard"))
+
+    # View-only accounts cannot perform any modifying actions (POST or GET approve/delete/toggle)
+    if role == "View only":
+        is_modifying_get = (
+            path.startswith("/admin/approve/")
+            or path.startswith("/admin/tour/delete/")
+            or path.startswith("/admin/van/toggle/")
+        )
+        if request.method != "GET" or is_modifying_get:
+            flash("View-only accounts cannot add, edit, approve, or delete records.", "error")
+            return redirect(request.referrer or url_for("admin_dashboard"))
+    return None
 
 
 @app.route("/")
@@ -898,22 +969,91 @@ def members():
         ).first()
 
         if found and found.check_password(password):
+            if found.check_password(DEFAULT_MEMBER_PASSWORD) or found.check_password("enasia2026"):
+                found.must_change_password = True
+                db.session.commit()
+            session["member_logged_in_id"] = found.id
             member = found
         else:
             error = "Invalid Member ID or password. Please try again."
+    elif session.get("member_logged_in_id"):
+        member = db.session.get(Member, session.get("member_logged_in_id"))
+        if member is None:
+            session.pop("member_logged_in_id", None)
 
     return render_template("members.html", member=member, error=error)
+
+
+@app.route("/members/logout")
+def member_logout():
+    session.pop("member_logged_in_id", None)
+    return redirect(url_for("members"))
+
+
+@app.route("/members/change-password", methods=["POST"])
+def member_change_password():
+    member_id = session.get("member_logged_in_id") or request.form.get("member_db_id", type=int)
+    member = db.session.get(Member, member_id) if member_id else None
+    if member is None:
+        return redirect(url_for("members"))
+
+    new_password = request.form.get("new_password", "").strip()
+    confirm_password = request.form.get("confirm_password", "").strip()
+    pw_error = None
+    pw_success = None
+
+    if not new_password or len(new_password) < 6:
+        pw_error = "Please enter a new password of at least 6 characters."
+    elif new_password != confirm_password:
+        pw_error = "New password and confirmation do not match."
+    elif new_password in (DEFAULT_MEMBER_PASSWORD, "enasia2026"):
+        pw_error = f"Please choose a personal password different from the default ({DEFAULT_MEMBER_PASSWORD})."
+    else:
+        member.set_password(new_password)
+        member.must_change_password = False
+        db.session.commit()
+        session["member_logged_in_id"] = member.id
+        pw_success = "Your password has been updated! Your account is now secured."
+
+    return render_template(
+        "members.html",
+        member=member,
+        error=None,
+        pw_error=pw_error,
+        pw_success=pw_success,
+    )
 
 
 @app.route("/admin", methods=["GET", "POST"])
 def admin_login():
     error = None
+    OfficeUser = office_models["OfficeUser"]
     if request.method == "POST":
-        if (
-            request.form.get("username") == ADMIN_USER
-            and request.form.get("password") == ADMIN_PASS
-        ):
+        username_in = (request.form.get("username") or "").strip()
+        password_in = request.form.get("password") or ""
+
+        # Ensure default admin exists in OfficeUser table
+        if OfficeUser.query.count() == 0:
+            default_admin = OfficeUser(
+                id=str(uuid.uuid4()),
+                username=ADMIN_USER,
+                password_hash=generate_password_hash(ADMIN_PASS),
+                role="Admin",
+                created_at=_now_iso(),
+            )
+            db.session.add(default_admin)
+            db.session.commit()
+
+        user = OfficeUser.query.filter(
+            db.func.lower(OfficeUser.username) == username_in.lower()
+        ).first()
+
+        if user and check_password_hash(user.password_hash, password_in):
             session["logged_in"] = True
+            session["admin_user_id"] = user.id
+            session["admin_username"] = user.username
+            session["admin_role"] = user.role
+            session.pop("office_db_signed_out", None)
             return redirect(url_for("admin_dashboard"))
         else:
             error = "Invalid username or password!"
@@ -924,6 +1064,7 @@ def admin_login():
 def admin_dashboard():
     if not session.get("logged_in"):
         return redirect(url_for("admin_login"))
+    OfficeUser = office_models["OfficeUser"]
     all_reservations = Reservation.query.all()
     all_vans = Van.query.all()
     all_rates = DestinationRate.query.all()
@@ -931,6 +1072,7 @@ def admin_dashboard():
     all_franchise_apps = FranchiseApplication.query.all()
     all_tour_apps = TourApplication.query.all()
     all_gcash_payments = GCashPayment.query.all()
+    staff_users = OfficeUser.query.order_by(db.func.lower(OfficeUser.username)).all()
     van_statuses = {
         van.id: get_van_display_status(van, all_reservations)
         for van in all_vans
@@ -945,7 +1087,170 @@ def admin_dashboard():
         tour_apps=all_tour_apps,
         gcash_payments=all_gcash_payments,
         van_statuses=van_statuses,
+        staff_users=staff_users,
+        current_username=session.get("admin_username", "admin"),
+        current_role=session.get("admin_role", "Admin"),
     )
+
+
+@app.route("/admin/users/add", methods=["POST"])
+def admin_add_staff_user():
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+    if session.get("admin_role", "Admin") != "Admin":
+        flash("Only an Administrator can add user accounts.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    OfficeUser = office_models["OfficeUser"]
+    username = (request.form.get("username") or "").strip()
+    password = (request.form.get("password") or "").strip()
+    role = (request.form.get("role") or "Editor").strip()
+
+    if not re.match(r"^[a-zA-Z0-9._-]{3,50}$", username):
+        flash("Username must be 3-50 letters, numbers, dots, underscores, or hyphens.", "error")
+        return redirect(url_for("admin_dashboard"))
+    if len(password) < 6:
+        flash("Password must be at least 6 characters.", "error")
+        return redirect(url_for("admin_dashboard"))
+    if role not in STAFF_ROLES:
+        flash("Invalid role selected. Choose Admin, Editor, or View only.", "error")
+        return redirect(url_for("admin_dashboard"))
+    if OfficeUser.query.filter(db.func.lower(OfficeUser.username) == username.lower()).first():
+        flash(f"Username '{username}' is already in use.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    new_user = OfficeUser(
+        id=str(uuid.uuid4()),
+        username=username,
+        password_hash=generate_password_hash(password),
+        role=role,
+        created_at=_now_iso(),
+    )
+    db.session.add(new_user)
+    db.session.commit()
+    flash(f"Created user account '{username}' with role '{role}'.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/users/<user_id>/reset-password", methods=["POST"])
+def admin_reset_staff_password(user_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+    if session.get("admin_role", "Admin") != "Admin":
+        flash("Only an Administrator can reset user passwords.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    OfficeUser = office_models["OfficeUser"]
+    user = db.session.get(OfficeUser, user_id)
+    if user is None:
+        flash("User account not found.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    new_password = (request.form.get("new_password") or "").strip()
+    if len(new_password) < 6:
+        flash("New password must be at least 6 characters.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    user.password_hash = generate_password_hash(new_password)
+    db.session.commit()
+    flash(f"Password for '{user.username}' ({user.role}) has been updated.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/users/<user_id>/role", methods=["POST"])
+def admin_update_staff_role(user_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+    if session.get("admin_role", "Admin") != "Admin":
+        flash("Only an Administrator can change user roles.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    OfficeUser = office_models["OfficeUser"]
+    user = db.session.get(OfficeUser, user_id)
+    if user is None:
+        flash("User account not found.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    new_role = (request.form.get("role") or "").strip()
+    if new_role not in STAFF_ROLES:
+        flash("Choose Admin, Editor, or View only.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    if user.role == "Admin" and new_role != "Admin":
+        admin_count = OfficeUser.query.filter_by(role="Admin").count()
+        if admin_count <= 1:
+            flash("Cannot remove Admin role from the last remaining Administrator.", "error")
+            return redirect(url_for("admin_dashboard"))
+
+    user.role = new_role
+    if session.get("admin_user_id") == user.id:
+        session["admin_role"] = new_role
+    db.session.commit()
+    flash(f"Updated role for '{user.username}' to '{new_role}'.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/users/<user_id>/delete", methods=["POST"])
+def admin_delete_staff_user(user_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+    if session.get("admin_role", "Admin") != "Admin":
+        flash("Only an Administrator can delete user accounts.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    OfficeUser = office_models["OfficeUser"]
+    OfficeSession = office_models["OfficeSession"]
+    user = db.session.get(OfficeUser, user_id)
+    if user is None:
+        flash("User account not found.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    if user.role == "Admin":
+        admin_count = OfficeUser.query.filter_by(role="Admin").count()
+        if admin_count <= 1:
+            flash("Cannot delete the last remaining Administrator account.", "error")
+            return redirect(url_for("admin_dashboard"))
+
+    uname = user.username
+    OfficeSession.query.filter_by(user_id=user.id).delete()
+    db.session.delete(user)
+    db.session.commit()
+    flash(f"Deleted user account '{uname}'.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/change-my-password", methods=["POST"])
+def admin_change_my_password():
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    OfficeUser = office_models["OfficeUser"]
+    current_username = session.get("admin_username", "admin")
+    user = OfficeUser.query.filter(
+        db.func.lower(OfficeUser.username) == current_username.lower()
+    ).first()
+    if user is None:
+        flash("Account not found.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    current_pw = request.form.get("current_password") or ""
+    new_pw = (request.form.get("new_password") or "").strip()
+    confirm_pw = (request.form.get("confirm_password") or "").strip()
+
+    if not check_password_hash(user.password_hash, current_pw):
+        flash("Current password is incorrect.", "error")
+        return redirect(url_for("admin_dashboard"))
+    if len(new_pw) < 6:
+        flash("New password must be at least 6 characters.", "error")
+        return redirect(url_for("admin_dashboard"))
+    if new_pw != confirm_pw:
+        flash("New password and confirmation do not match.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    user.password_hash = generate_password_hash(new_pw)
+    db.session.commit()
+    flash("Your login password has been changed successfully.", "success")
+    return redirect(url_for("admin_dashboard"))
 
 
 @app.route("/admin/members")
@@ -1011,6 +1316,7 @@ def admin_add_member():
         original_or_cr=request.form.get("original_or_cr", "").strip() or None,
         facebook_name=request.form.get("facebook_name", "").strip() or None,
         terms=request.form.get("terms", "").strip() or None,
+        must_change_password=True,
     )
     new_member.set_password(password)
     db.session.add(new_member)
@@ -1066,6 +1372,7 @@ def admin_edit_member(member_db_id):
     new_password = request.form.get("password", "").strip()
     if new_password:
         member.set_password(new_password)
+        member.must_change_password = True
 
     db.session.commit()
     sync_local_seed_file()
@@ -1089,12 +1396,31 @@ def admin_reset_member_password(member_db_id):
         return redirect(url_for("admin_members_page", selected_id=member.id))
 
     member.set_password(new_password)
+    member.must_change_password = True
     db.session.commit()
     flash(
-        f"Password for {member.full_name} ({member.member_code}) has been reset.",
+        f"Password for {member.full_name} ({member.member_code}) has been reset. They will be prompted to change it upon first login.",
         "success",
     )
     return redirect(url_for("admin_members_page", selected_id=member.id))
+
+
+@app.route("/admin/members/reset-all-passwords", methods=["POST"])
+def admin_reset_all_member_passwords():
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+
+    default_pw_hash = generate_password_hash(DEFAULT_MEMBER_PASSWORD)
+    all_members = Member.query.all()
+    for m in all_members:
+        m.password_hash = default_pw_hash
+        m.must_change_password = True
+    db.session.commit()
+    flash(
+        f"Reset all {len(all_members)} member passwords to '{DEFAULT_MEMBER_PASSWORD}' (first-login password change required).",
+        "success",
+    )
+    return redirect(url_for("admin_members_page"))
 
 
 @app.route("/admin/members/delete/<int:member_db_id>", methods=["POST"])
@@ -1189,7 +1515,7 @@ def admin_import_members():
         return redirect(url_for("admin_login"))
 
     file = request.files.get("excel_file")
-    default_pw = request.form.get("default_password", "enasia2026").strip() or "enasia2026"
+    default_pw = request.form.get("default_password", DEFAULT_MEMBER_PASSWORD).strip() or DEFAULT_MEMBER_PASSWORD
     if not file or not file.filename:
         flash("Please choose an Excel (.xlsx) or CSV (.csv) file to import.", "error")
         return redirect(url_for("admin_members_page"))
@@ -1242,7 +1568,7 @@ def admin_import_members():
         else:
             if not code:
                 code = generate_next_member_code()
-            target = Member(member_code=code, full_name=full_name)
+            target = Member(member_code=code, full_name=full_name, must_change_password=True)
             target.set_password(get_col(r, "password") or default_pw)
             db.session.add(target)
             db.session.flush()
@@ -1855,6 +2181,10 @@ def admin_finances_delete_tx(tx_id):
 @app.route("/admin/logout")
 def admin_logout():
     session.pop("logged_in", None)
+    session.pop("admin_user_id", None)
+    session.pop("admin_username", None)
+    session.pop("admin_role", None)
+    session.pop("office_db_signed_out", None)
     return redirect(url_for("admin_login"))
 
 
