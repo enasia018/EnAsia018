@@ -3,524 +3,1532 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Admin Dashboard — EnAsia Tourist &amp; Transport</title>
     <style>
+        :root {
+            color-scheme: light;
+            --bg: #f3f6f8;
+            --card: #ffffff;
+            --card-alt: #f8fafc;
+            --border: #e1e8ed;
+            --border-strong: #cbd5e1;
+            --ink: #0f2533;
+            --ink-soft: #334e5e;
+            --muted: #647886;
+            --navy: #123b54;
+            --navy-dark: #0c2a3d;
+            --teal: #126482;
+            --teal-hover: #0e5068;
+            --teal-light: #e8f4f8;
+            --green: #16794c;
+            --green-hover: #11613c;
+            --green-bg: #e6f6ee;
+            --amber: #b45309;
+            --amber-bg: #fef3c7;
+            --blue: #1d4ed8;
+            --blue-bg: #dbeafe;
+            --danger: #c53030;
+            --danger-hover: #9b2c2c;
+            --danger-bg: #fff5f5;
+            --danger-border: #feb2b2;
+            --shadow-sm: 0 2px 8px rgba(15, 37, 51, 0.04);
+            --shadow-md: 0 8px 24px rgba(15, 37, 51, 0.07);
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #111;
-            color: #fff;
-            padding: 20px;
+            margin: 0;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--ink);
+            line-height: 1.5;
+            min-height: 100vh;
         }
-        h2, h3 {
-            color: #ff3333;
+
+        /* Top Navigation Header */
+        .topbar {
+            background: linear-gradient(135deg, var(--navy) 0%, #164b6a 100%);
+            color: #ffffff;
+            padding: 16px 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            box-shadow: 0 4px 18px rgba(12, 42, 61, 0.16);
+            position: sticky;
+            top: 0;
+            z-index: 50;
         }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            background: #0c2a3d;
+        }
+
+        .brand-eyebrow {
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #9ec5db;
+            margin: 0 0 2px 0;
+        }
+
+        .brand-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .user-pill {
+            background: rgba(255, 255, 255, 0.11);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #f0f7fa;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 0.84rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .user-role-tag {
+            background: #22c55e;
+            color: #052e16;
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .top-btn {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: #ffffff;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.83rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s, transform 0.15s;
+        }
+
+        .top-btn:hover {
+            background: rgba(255, 255, 255, 0.22);
+            transform: translateY(-1px);
+        }
+
+        .top-btn-accent {
+            background: #1a85ab;
+            border-color: #2aa3ce;
+        }
+
+        .top-btn-accent:hover {
+            background: #157294;
+        }
+
+        .top-btn-logout {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(248, 113, 113, 0.4);
+            color: #fecaca;
+        }
+
+        .top-btn-logout:hover {
+            background: rgba(239, 68, 68, 0.35);
+            color: #ffffff;
+        }
+
+        /* Main Container */
+        .dashboard-main {
+            max-width: 1560px;
+            margin: 0 auto;
+            padding: 28px 36px 64px;
+        }
+
+        @media (max-width: 768px) {
+            .topbar {
+                padding: 14px 18px;
+            }
+            .dashboard-main {
+                padding: 20px 16px 48px;
+            }
+        }
+
+        /* Flash Notices */
+        .admin-notice {
+            padding: 13px 18px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .admin-notice-success {
+            background: var(--green-bg);
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+
+        .admin-notice-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .admin-notice-info {
+            background: var(--blue-bg);
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
+
+        /* Expandable Admin Panels (Password & User Management) */
+        .drawer-card {
+            background: var(--card);
+            border: 1px solid #bae6fd;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 24px 26px;
+            margin-bottom: 24px;
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .drawer-header h3 {
+            margin: 0 0 4px 0;
+            font-size: 1.15rem;
+            color: var(--navy);
+        }
+
+        .drawer-header p {
+            margin: 0;
+            font-size: 0.86rem;
+            color: var(--muted);
+        }
+
+        /* Quick-Launch Module Cards */
+        .section-eyebrow {
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin: 0 0 10px 0;
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+            gap: 16px;
+            margin-bottom: 26px;
+        }
+
+        .module-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px 22px;
+            text-decoration: none;
+            color: var(--ink);
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+            position: relative;
+        }
+
+        .module-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+            border-color: #93c5fd;
+        }
+
+        .module-card-featured {
+            background: linear-gradient(135deg, #123b54 0%, #126482 100%);
+            border-color: #126482;
+            color: #ffffff;
+        }
+
+        .module-card-featured:hover {
+            border-color: #38bdf8;
+        }
+
+        .module-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--teal-light);
+            color: var(--teal);
+            display: grid;
+            place-items: center;
+            font-size: 1.45rem;
+            flex-shrink: 0;
+        }
+
+        .module-card-featured .module-icon {
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+        }
+
+        .module-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .module-title {
+            font-size: 1.02rem;
+            font-weight: 800;
+            margin: 0 0 4px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .module-desc {
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .module-card-featured .module-desc {
+            color: #cfe8f3;
+        }
+
+        .module-arrow {
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: var(--card-alt);
+            color: var(--teal);
+            border: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .module-card-featured .module-arrow {
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        /* KPI Summary Strip */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+
+        .kpi-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 16px 18px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .kpi-label {
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--muted);
+            margin: 0 0 4px 0;
+        }
+
+        .kpi-value {
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: var(--ink);
+            margin: 0;
+            line-height: 1.1;
+        }
+
+        .kpi-sub {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        .kpi-badge {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: var(--card-alt);
+            border: 1px solid var(--border);
+            display: grid;
+            place-items: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        /* Quick-Add Forms Grid */
+        .quick-add-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 18px;
+            margin-bottom: 32px;
+        }
+
+        .form-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px 24px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .form-card-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-card-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: var(--teal-light);
+            color: var(--teal);
+            display: grid;
+            place-items: center;
+            font-size: 1rem;
+        }
+
+        .form-card-head h4 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--ink);
+        }
+
+        .field-stack {
+            display: grid;
+            gap: 11px;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--ink-soft);
+            margin-bottom: 4px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="date"],
+        input[type="time"],
+        input[type="search"],
+        select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            background: #ffffff;
+            color: var(--ink);
+            font: inherit;
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--teal);
+            box-shadow: 0 0 0 3px rgba(18, 100, 130, 0.14);
+        }
+
+        /* Buttons */
+        .btn {
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            padding: 9px 16px;
+            font: inherit;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: background 0.15s, border-color 0.15s, transform 0.12s;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary,
+        .btn-add {
+            background: var(--teal);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover,
+        .btn-add:hover {
+            background: var(--teal-hover);
+        }
+
+        .btn-approve {
+            background: var(--green);
+            color: #ffffff;
+        }
+
+        .btn-approve:hover {
+            background: var(--green-hover);
+        }
+
+        .btn-delete {
+            background: var(--danger-bg);
+            border-color: var(--danger-border);
+            color: var(--danger);
+        }
+
+        .btn-delete:hover {
+            background: #fed7d7;
+            color: var(--danger-hover);
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            border-color: var(--border-strong);
+            color: var(--ink-soft);
+        }
+
+        .btn-secondary:hover {
+            background: var(--card-alt);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.79rem;
+        }
+
+        /* Filter Toolbar */
+        .filter-toolbar {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .filter-tabs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            background: var(--card-alt);
+            border: 1px solid var(--border);
+            color: var(--ink-soft);
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .filter-tab:hover {
+            border-color: var(--teal);
+            color: var(--teal);
+        }
+
+        .filter-tab.active {
+            background: var(--navy);
+            border-color: var(--navy);
+            color: #ffffff;
+        }
+
+        .filter-search {
+            min-width: 270px;
+            flex: 0 1 340px;
+        }
+
+        /* Section Cards & Tables */
+        .section-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 26px;
+            overflow: hidden;
+        }
+
+        .section-card-header {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: #ffffff;
+        }
+
+        .section-card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-card-title h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--ink);
+        }
+
+        .count-pill {
+            background: var(--teal-light);
+            color: var(--teal);
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 999px;
+        }
+
+        .admin-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
-            background: #222;
-        }
-        th, td {
-            border: 1px solid #444;
-            padding: 10px;
             text-align: left;
         }
+
         th {
-            background-color: #333;
-            color: #ff3333;
+            background: var(--card-alt);
+            color: var(--muted);
+            font-size: 0.73rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 12px 18px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
         }
-        .btn-approve {
-            background-color: #4CAF50;
-            color: white;
-            padding: 5px 10px;
-            text-decoration: none;
-            border-radius: 3px;
+
+        td {
+            padding: 14px 18px;
+            border-bottom: 1px solid #eef2f6;
+            font-size: 0.88rem;
+            vertical-align: middle;
+            color: var(--ink);
         }
-        .btn-delete {
-            background-color: #ff3333;
-            color: white;
-            padding: 5px 10px;
-            text-decoration: none;
-            border-radius: 3px;
+
+        tbody tr:last-child td {
+            border-bottom: none;
         }
-        .btn-toggle {
-            background-color: #ff9800;
-            color: white;
-            padding: 5px 10px;
-            text-decoration: none;
-            border-radius: 3px;
+
+        tbody tr:hover {
+            background: #fafcfd;
         }
-        .btn-add {
-            background-color: #ff3333;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 3px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .btn-logout {
-            background-color: #ff3333;
-            color: white;
-            padding: 10px 15px;
-            text-decoration: none;
-            border-radius: 5px;
-            float: right;
-        }
-        .form-box {
-            background: #222;
-            padding: 15px;
-            border: 1px solid #444;
-            border-radius: 5px;
-            margin-bottom: 20px;
+
+        .id-badge {
             display: inline-block;
-            vertical-align: top;
+            background: var(--card-alt);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
         }
-        input[type="text"] {
-            padding: 6px;
-            margin-right: 10px;
-            margin-bottom: 5px;
-            border-radius: 3px;
-            border: none;
+
+        /* Status Pills */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.76rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .status-approved {
+            background: var(--green-bg);
+            color: var(--green);
+        }
+
+        .status-pending {
+            background: var(--amber-bg);
+            color: var(--amber);
+        }
+
+        .status-info {
+            background: var(--blue-bg);
+            color: var(--blue);
+        }
+
+        /* Inline Forms inside Tables */
+        .inline-edit-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .inline-edit-form input[type="text"] {
+            width: auto;
+            min-width: 160px;
+            flex: 1;
+        }
+
+        .schedule-form {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .schedule-form label {
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .schedule-form input {
+            width: auto;
+            padding: 6px 9px;
+            font-size: 0.82rem;
+        }
+
+        .doc-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--teal-light);
+            color: var(--teal);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.79rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+
+        .doc-link:hover {
+            background: #d2ebf3;
+        }
+
+        .applicant-name {
+            font-weight: 800;
+            color: var(--ink);
+            font-size: 0.93rem;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .meta-line {
+            color: var(--muted);
+            font-size: 0.81rem;
+            display: block;
+            line-height: 1.45;
+        }
+
+        .action-stack {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .empty-row td {
+            text-align: center;
+            padding: 34px 20px;
+            color: var(--muted);
+            font-size: 0.9rem;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
 </head>
 <body class="admin-page">
 
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px;">
-        <h2 style="margin: 0;">Admin Dashboard</h2>
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <span style="background: #eaf3ed; border: 1px solid #dce5de; padding: 9px 14px; border-radius: 10px; font-size: 14px; color: #18332d;">
-                👤 <strong>{{ current_username or 'admin' }}</strong> · <span style="color: #174d3a; font-weight: 800;">{{ current_role or 'Admin' }}</span>
+    <!-- Top Navigation Bar -->
+    <header class="topbar">
+        <div class="brand">
+            <img src="{{ url_for('static', filename='office_db/enasia-logo.jpg') }}?v=2" alt="EnAsia Logo" class="brand-logo" onerror="this.style.display='none'">
+            <div>
+                <p class="brand-eyebrow">ENASIA TOURIST &amp; TRANSPORT</p>
+                <h1 class="brand-title">Admin Control Center</h1>
+            </div>
+        </div>
+
+        <div class="topbar-actions">
+            <span class="user-pill">
+                👤 <strong>{{ current_username or 'admin' }}</strong>
+                <span class="user-role-tag">{{ current_role or 'Admin' }}</span>
             </span>
-            <button type="button" onclick="var p=document.getElementById('changeMyPwPanel'); p.style.display=(p.style.display==='none'?'block':'none');">
+            <a href="{{ url_for('home') }}" target="_blank" rel="noopener noreferrer" class="top-btn">
+                🌐 Live Website ↗
+            </a>
+            <button type="button" class="top-btn" onclick="var p=document.getElementById('changeMyPwPanel'); p.style.display=(p.style.display==='none'?'block':'none');">
                 🔑 Change My Password
             </button>
             {% if (current_role or 'Admin') == 'Admin' %}
-            <button type="button" onclick="var p=document.getElementById('manageStaffUsersPanel'); p.style.display=(p.style.display==='none'?'block':'none');">
+            <button type="button" class="top-btn top-btn-accent" onclick="var p=document.getElementById('manageStaffUsersPanel'); p.style.display=(p.style.display==='none'?'block':'none');">
                 👥 Manage Users &amp; Passwords
             </button>
             {% endif %}
-            <a href="{{ url_for('admin_logout') }}" class="btn-logout" style="float: none;">Logout</a>
+            <a href="{{ url_for('admin_logout') }}" class="top-btn top-btn-logout">Logout</a>
         </div>
-    </div>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            <div class="admin-notice admin-notice-{{ category }}" role="status">{{ message }}</div>
-        {% endfor %}
-    {% endwith %}
+    </header>
 
-    <!-- Change Own Password Panel (Available to Admin, Editor, and View only) -->
-    <div id="changeMyPwPanel" class="card" style="display: none; margin-bottom: 22px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-            <h3 style="margin: 0;">🔑 Change My Login Password ({{ current_username or 'admin' }})</h3>
-            <button type="button" onclick="document.getElementById('changeMyPwPanel').style.display='none'" style="padding: 6px 12px !important;">✕ Close</button>
-        </div>
-        <form action="{{ url_for('admin_change_my_password') }}" method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end;">
-            <div>
-                <label style="margin-top: 0;">Current Password</label>
-                <input type="password" name="current_password" placeholder="Current Password" required>
-            </div>
-            <div>
-                <label style="margin-top: 0;">New Password (min. 6 chars)</label>
-                <input type="password" name="new_password" placeholder="New Password" minlength="6" required>
-            </div>
-            <div>
-                <label style="margin-top: 0;">Confirm New Password</label>
-                <input type="password" name="confirm_password" placeholder="Confirm New Password" minlength="6" required>
-            </div>
-            <div>
-                <button type="submit" class="btn-approve" style="width: 100%;">Update My Password</button>
-            </div>
-        </form>
-    </div>
+    <main class="dashboard-main">
 
-    {% if (current_role or 'Admin') == 'Admin' %}
-    <!-- Manage Staff Users (Add Admin / Editor / View only + Reset Passwords) -->
-    <div id="manageStaffUsersPanel" class="card" style="display: none; margin-bottom: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
-            <div>
-                <h3 style="margin: 0 0 4px 0;">👥 Manage Admin Dashboard &amp; Database Users</h3>
-                <p style="margin: 0; font-size: 0.9rem;">Accounts created here can log in to both the <strong>Admin Dashboard</strong> and the <strong>EnAsia Database System</strong> with their assigned role (<strong>Admin</strong>, <strong>Editor</strong>, or <strong>View only</strong>).</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="admin-notice admin-notice-{{ category }}" role="status">
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+        <!-- Change Own Password Panel (Available to Admin, Editor, and View only) -->
+        <div id="changeMyPwPanel" class="drawer-card" style="display: none;">
+            <div class="drawer-header">
+                <div>
+                    <h3>🔑 Change My Login Password ({{ current_username or 'admin' }})</h3>
+                    <p>Update your personal password for the Admin Dashboard and EnAsia Database System.</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('changeMyPwPanel').style.display='none'">✕ Close</button>
             </div>
-            <button type="button" onclick="document.getElementById('manageStaffUsersPanel').style.display='none'" style="padding: 6px 12px !important;">✕ Close</button>
+            <form action="{{ url_for('admin_change_my_password') }}" method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; align-items: end;">
+                <div>
+                    <label class="field-label">Current Password</label>
+                    <input type="password" name="current_password" placeholder="Current Password" required>
+                </div>
+                <div>
+                    <label class="field-label">New Password (min. 6 chars)</label>
+                    <input type="password" name="new_password" placeholder="New Password" minlength="6" required>
+                </div>
+                <div>
+                    <label class="field-label">Confirm New Password</label>
+                    <input type="password" name="confirm_password" placeholder="Confirm New Password" minlength="6" required>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-approve" style="width: 100%;">Update My Password</button>
+                </div>
+            </form>
         </div>
 
-        <!-- Form to Add New Staff User -->
-        <form action="{{ url_for('admin_add_staff_user') }}" method="POST" style="background: #eaf3ed; border: 1px solid #dce5de; padding: 16px; border-radius: 14px; margin-bottom: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; align-items: end;">
-            <div>
-                <label style="margin-top: 0;">Username *</label>
-                <input type="text" name="username" placeholder="e.g. editor1" minlength="3" maxlength="50" required style="margin: 0;">
+        {% if (current_role or 'Admin') == 'Admin' %}
+        <!-- Manage Staff Users (Add Admin / Editor / View only + Reset Passwords) -->
+        <div id="manageStaffUsersPanel" class="drawer-card" style="display: none;">
+            <div class="drawer-header">
+                <div>
+                    <h3>👥 Manage Admin Dashboard &amp; Database Users</h3>
+                    <p>Accounts created here can log in to both the <strong>Admin Dashboard</strong> and the <strong>EnAsia Database System</strong> with their assigned role (<strong>Admin</strong>, <strong>Editor</strong>, or <strong>View only</strong>).</p>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('manageStaffUsersPanel').style.display='none'">✕ Close</button>
             </div>
-            <div>
-                <label style="margin-top: 0;">Password (min. 6 chars) *</label>
-                <input type="text" name="password" placeholder="Enter password" minlength="6" maxlength="200" required style="margin: 0;">
-            </div>
-            <div>
-                <label style="margin-top: 0;">Role *</label>
-                <select name="role">
-                    <option value="Editor">Editor (Can view &amp; edit records)</option>
-                    <option value="View only">View only / Viewer (Read-only)</option>
-                    <option value="Admin">Admin (Full access + manage users)</option>
-                </select>
-            </div>
-            <div>
-                <button type="submit" class="btn-approve" style="width: 100%;">+ Create Account</button>
-            </div>
-        </form>
 
-        <!-- Table of Existing Staff Users -->
-        <div class="admin-table-wrap" style="margin-bottom: 0;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Role (Admin / Editor / View only)</th>
-                        <th>Reset Password</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in staff_users %}
-                    <tr>
-                        <td>
-                            <strong>{{ u.username }}</strong>
-                            {% if u.username == current_username %}
-                            <span style="background: #174d3a; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 6px;">You</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <form action="{{ url_for('admin_update_staff_role', user_id=u.id) }}" method="POST" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                                <select name="role" style="width: auto; min-width: 130px;">
-                                    <option value="Admin" {{ 'selected' if u.role == 'Admin' }}>Admin</option>
-                                    <option value="Editor" {{ 'selected' if u.role == 'Editor' }}>Editor</option>
-                                    <option value="View only" {{ 'selected' if u.role == 'View only' }}>View only</option>
-                                </select>
-                                <button type="submit" style="padding: 8px 14px !important;">Save Role</button>
-                            </form>
-                        </td>
-                        <td>
-                            <form action="{{ url_for('admin_reset_staff_password', user_id=u.id) }}" method="POST" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                                <input type="text" name="new_password" placeholder="New password (min. 6)" minlength="6" required style="width: 180px; margin: 0;">
-                                <button type="submit" style="padding: 8px 14px !important;">Reset Password</button>
-                            </form>
-                        </td>
-                        <td>
-                            <form action="{{ url_for('admin_delete_staff_user', user_id=u.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete user account {{ u.username | e }}?');">
-                                <button type="submit" class="btn-delete" style="padding: 8px 14px !important;">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <!-- Form to Add New Staff User -->
+            <form action="{{ url_for('admin_add_staff_user') }}" method="POST" style="background: var(--card-alt); border: 1px solid var(--border); padding: 18px; border-radius: var(--radius-md); margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: end;">
+                <div>
+                    <label class="field-label">Username *</label>
+                    <input type="text" name="username" placeholder="e.g. editor1" minlength="3" maxlength="50" required>
+                </div>
+                <div>
+                    <label class="field-label">Password (min. 6 chars) *</label>
+                    <input type="text" name="password" placeholder="Enter password" minlength="6" maxlength="200" required>
+                </div>
+                <div>
+                    <label class="field-label">Role *</label>
+                    <select name="role">
+                        <option value="Editor">Editor (Can view &amp; edit records)</option>
+                        <option value="View only">View only / Viewer (Read-only)</option>
+                        <option value="Admin">Admin (Full access + manage users)</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-approve" style="width: 100%;">+ Create Account</button>
+                </div>
+            </form>
+
+            <!-- Table of Existing Staff Users -->
+            <div class="admin-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Role (Admin / Editor / View only)</th>
+                            <th>Reset Password</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in staff_users %}
+                        <tr>
+                            <td>
+                                <strong>{{ u.username }}</strong>
+                                {% if u.username == current_username %}
+                                <span class="count-pill" style="margin-left: 6px;">You</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form action="{{ url_for('admin_update_staff_role', user_id=u.id) }}" method="POST" class="action-stack">
+                                    <select name="role" style="width: auto; min-width: 135px;">
+                                        <option value="Admin" {{ 'selected' if u.role == 'Admin' }}>Admin</option>
+                                        <option value="Editor" {{ 'selected' if u.role == 'Editor' }}>Editor</option>
+                                        <option value="View only" {{ 'selected' if u.role == 'View only' }}>View only</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary btn-sm">Save Role</button>
+                                </form>
+                            </td>
+                            <td>
+                                <form action="{{ url_for('admin_reset_staff_password', user_id=u.id) }}" method="POST" class="action-stack">
+                                    <input type="text" name="new_password" placeholder="New password (min. 6)" minlength="6" required style="width: 185px;">
+                                    <button type="submit" class="btn btn-secondary btn-sm">Reset Password</button>
+                                </form>
+                            </td>
+                            <td>
+                                <form action="{{ url_for('admin_delete_staff_user', user_id=u.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Delete user account {{ u.username | e }}?');">
+                                    <button type="submit" class="btn btn-delete btn-sm">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
-    {% endif %}
+        {% endif %}
 
-    <div style="margin-bottom: 22px; display: flex; gap: 12px; flex-wrap: wrap;">
-        <a href="{{ url_for('admin_members_page') }}" target="_blank" rel="noopener noreferrer" class="btn-add" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-            🪪 Members Directory ↗
-        </a>
-        <a href="{{ url_for('admin_vans_schedule') }}" target="_blank" rel="noopener noreferrer" class="btn-add" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-            🗓️ Van List &amp; Schedule ↗
-        </a>
-        <a href="{{ url_for('admin_van_finances') }}" target="_blank" rel="noopener noreferrer" class="btn-add" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
-            🚐 Van Earnings &amp; Expenses ↗
-        </a>
-        <a href="{{ url_for('office_db.index', auto=1) }}" target="_blank" rel="noopener noreferrer" class="btn-add" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px; background-color: #126482;">
-            🗄️ EnAsia Database System ↗
-        </a>
-    </div>
+        <!-- Quick-Launch Modules -->
+        <p class="section-eyebrow">SYSTEM MODULES &amp; DIRECTORIES</p>
+        <div class="module-grid">
+            <a href="{{ url_for('office_db.index', auto=1) }}" target="_blank" rel="noopener noreferrer" class="module-card module-card-featured">
+                <div class="module-icon">🗄️</div>
+                <div class="module-body">
+                    <div class="module-title">
+                        <span>EnAsia Database System</span>
+                        <span class="module-arrow">Open ↗</span>
+                    </div>
+                    <p class="module-desc">Complete member records, franchise payments, monthly dues status &amp; PA/CPC/OR/CR document scans.</p>
+                </div>
+            </a>
 
-    <!-- Form to add a new Van -->
-    <div class="form-box">
-        <h4>Add New Van</h4>
-        <form action="{{ url_for('add_van') }}" method="POST">
-            <input type="text" name="van_name" placeholder="Van Name" required><br>
-            <input type="text" name="plate_number" placeholder="Plate Number"><br>
-            <input type="text" name="driver_name" placeholder="Driver Name"><br>
-            <button type="submit" class="btn-add">Add Van</button>
-        </form>
-    </div>
+            <a href="{{ url_for('admin_members_page') }}" target="_blank" rel="noopener noreferrer" class="module-card">
+                <div class="module-icon">👥</div>
+                <div class="module-body">
+                    <div class="module-title">
+                        <span>Members Directory</span>
+                        <span class="module-arrow">Open ↗</span>
+                    </div>
+                    <p class="module-desc">Public Member Portal login accounts, password status &amp; one-click Password123 reset.</p>
+                </div>
+            </a>
 
-    <!-- Form to add Pick-up & Destination Rate -->
-    <div class="form-box" style="margin-left: 20px;">
-        <h4>Add Pick-up & Destination Rate</h4>
-        <form action="{{ url_for('add_rate') }}" method="POST">
-            <input type="text" name="pickup_location" placeholder="Pick-up Location" required><br>
-            <input type="text" name="destination" placeholder="Destination Name" required><br>
-            <input type="text" name="rate_per_day" placeholder="Base rate (2 days, ₱)" required><br>
-            <button type="submit" class="btn-add">Add Rate</button>
-        </form>
-    </div>
+            <a href="{{ url_for('admin_vans_schedule') }}" target="_blank" rel="noopener noreferrer" class="module-card">
+                <div class="module-icon">🗓️</div>
+                <div class="module-body">
+                    <div class="module-title">
+                        <span>Van List &amp; Schedule</span>
+                        <span class="module-arrow">Open ↗</span>
+                    </div>
+                    <p class="module-desc">Manage fleet availability status, driver assignments &amp; upcoming van booking schedules.</p>
+                </div>
+            </a>
 
-    <!-- Form to add a new Franchise Option -->
-    <div class="form-box" style="margin-left: 20px;">
-        <h4>Add Franchise Option</h4>
-        <form action="{{ url_for('add_franchise_option') }}" method="POST">
-            <input type="text" name="title" placeholder="Option Title" required><br>
-            <input type="text" name="details" placeholder="Option Details" required><br>
-            <button type="submit" class="btn-add">Add Option</button>
-        </form>
-    </div>
+            <a href="{{ url_for('admin_van_finances') }}" target="_blank" rel="noopener noreferrer" class="module-card">
+                <div class="module-icon">🚐</div>
+                <div class="module-body">
+                    <div class="module-title">
+                        <span>Van Earnings &amp; Expenses</span>
+                        <span class="module-arrow">Open ↗</span>
+                    </div>
+                    <p class="module-desc">Track per-van rental earnings, maintenance expenses &amp; monthly net fleet income.</p>
+                </div>
+            </a>
+        </div>
 
-    <!-- Section 1: Destination Rates Management -->
-    <h3>Pick-up & Destination Rates Management</h3>
-    <div class="admin-table-wrap admin-table-wrap-rates">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Pick-up, Destination & Rate Settings</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for rate in rates %}
-            <tr>
-                <td>{{ rate.id }}</td>
-                <td>
-                    <form action="{{ url_for('edit_rate', rate_id=rate.id) }}" method="POST" style="display:inline;">
-                        <input type="text" name="pickup_location" value="{{ rate.pickup_location }}" placeholder="Pick-up" required style="background:#333; color:#fff; border:1px solid #555; width: 160px;">
-                        <input type="text" name="destination" value="{{ rate.destination }}" placeholder="Destination" required style="background:#333; color:#fff; border:1px solid #555; width: 160px;">
-                        <input type="text" name="rate_per_day" value="{{ '{:,.0f}'.format(rate.rate_per_day) if rate.rate_per_day == (rate.rate_per_day|int) else '{:,.2f}'.format(rate.rate_per_day) }}" placeholder="2-day base rate (₱)" required style="background:#333; color:#fff; border:1px solid #555; width: 100px;">
-                        <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update Rate</button>
+        <!-- Executive KPI Summary Strip -->
+        <p class="section-eyebrow">LIVE OPERATIONS OVERVIEW</p>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div>
+                    <p class="kpi-label">Van Reservations</p>
+                    <p class="kpi-value">{{ reservations | length }}</p>
+                    <div class="kpi-sub">Total bookings</div>
+                </div>
+                <div class="kpi-badge">📅</div>
+            </div>
+            <div class="kpi-card">
+                <div>
+                    <p class="kpi-label">Franchise Apps</p>
+                    <p class="kpi-value">{{ franchise_apps | length }}</p>
+                    <div class="kpi-sub">Option 1 &amp; 2 applicants</div>
+                </div>
+                <div class="kpi-badge">📋</div>
+            </div>
+            <div class="kpi-card">
+                <div>
+                    <p class="kpi-label">Tour Bookings</p>
+                    <p class="kpi-value">{{ tour_apps | length }}</p>
+                    <div class="kpi-sub">Package applications</div>
+                </div>
+                <div class="kpi-badge">🏝️</div>
+            </div>
+            <div class="kpi-card">
+                <div>
+                    <p class="kpi-label">GCash Payments</p>
+                    <p class="kpi-value">{{ gcash_payments | length }}</p>
+                    <div class="kpi-sub">Submitted receipts</div>
+                </div>
+                <div class="kpi-badge">💳</div>
+            </div>
+            <div class="kpi-card">
+                <div>
+                    <p class="kpi-label">Fleet Vans</p>
+                    <p class="kpi-value">{{ vans | length }}</p>
+                    <div class="kpi-sub">Registered vehicles</div>
+                </div>
+                <div class="kpi-badge">🚐</div>
+            </div>
+            <div class="kpi-card">
+                <div>
+                    <p class="kpi-label">Route Rates</p>
+                    <p class="kpi-value">{{ rates | length }}</p>
+                    <div class="kpi-sub">Pick-up &amp; destinations</div>
+                </div>
+                <div class="kpi-badge">📍</div>
+            </div>
+        </div>
+
+        <!-- Quick-Add Forms Grid -->
+        <p class="section-eyebrow">QUICK ADD &amp; CONFIGURATION</p>
+        <div class="quick-add-grid">
+            <!-- Form to add a new Van -->
+            <div class="form-card form-box">
+                <div>
+                    <div class="form-card-head">
+                        <div class="form-card-icon">🚐</div>
+                        <h4>Add New Van</h4>
+                    </div>
+                    <form action="{{ url_for('add_van') }}" method="POST" class="field-stack">
+                        <div>
+                            <label class="field-label">Van Name *</label>
+                            <input type="text" name="van_name" placeholder="e.g. Toyota Hiace Commuter" required>
+                        </div>
+                        <div>
+                            <label class="field-label">Plate Number</label>
+                            <input type="text" name="plate_number" placeholder="e.g. ABC-1234">
+                        </div>
+                        <div>
+                            <label class="field-label">Driver Name</label>
+                            <input type="text" name="driver_name" placeholder="Assigned driver name">
+                        </div>
+                        <button type="submit" class="btn btn-add" style="width: 100%; margin-top: 4px;">+ Add Van to Fleet</button>
                     </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
+                </div>
+            </div>
 
-    <!-- Section 2: Franchise Options Management -->
-    <h3>Franchise Options Management</h3>
-    <div class="admin-table-wrap admin-table-wrap-options">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Title & Details Settings</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for option in franchise_options %}
-            <tr>
-                <td>{{ option.id }}</td>
-                <td>
-                    <form action="{{ url_for('edit_franchise_option', option_id=option.id) }}" method="POST" style="display:inline;">
-                        <input type="text" name="title" value="{{ option.title }}" required style="background:#333; color:#fff; border:1px solid #555; width: 200px;">
-                        <input type="text" name="details" value="{{ option.details }}" required style="background:#333; color:#fff; border:1px solid #555; width: 300px;">
-                        <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update Option</button>
+            <!-- Form to add Pick-up & Destination Rate -->
+            <div class="form-card form-box">
+                <div>
+                    <div class="form-card-head">
+                        <div class="form-card-icon">📍</div>
+                        <h4>Add Pick-up &amp; Destination Rate</h4>
+                    </div>
+                    <form action="{{ url_for('add_rate') }}" method="POST" class="field-stack">
+                        <div>
+                            <label class="field-label">Pick-up Location *</label>
+                            <input type="text" name="pickup_location" placeholder="e.g. Metro Manila" required>
+                        </div>
+                        <div>
+                            <label class="field-label">Destination Name *</label>
+                            <input type="text" name="destination" placeholder="e.g. Baguio City" required>
+                        </div>
+                        <div>
+                            <label class="field-label">Base Rate (2 days, ₱) *</label>
+                            <input type="text" name="rate_per_day" placeholder="e.g. 12000" required>
+                        </div>
+                        <button type="submit" class="btn btn-add" style="width: 100%; margin-top: 4px;">+ Add Destination Rate</button>
                     </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
+                </div>
+            </div>
 
-    <!-- Section 3: Franchise Applications Management -->
-    <h3>Franchise Applications (Option 1 & 2)</h3>
-    <div class="admin-table-wrap admin-table-wrap-franchise">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Applicant Details</th>
-                <th>Vehicle Info</th>
-                <th>Documents</th>
-                <th>Status / Schedule</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for app in franchise_apps %}
-            <tr>
-                <td>{{ app.id }}</td>
-                <td>
-                    <strong>{{ app.full_name }}</strong><br>
-                    Address: {{ app.address }}<br>
-                    Contact: {{ app.contact }}<br>
-                    Email: {{ app.email or 'N/A' }}
-                </td>
-                <td>
-                    Type: {{ app.vehicle_type }}<br>
-                    Model: {{ app.vehicle_model }}<br>
-                    Plate: {{ app.plate_number }}
-                </td>
-                <td>
-                    <a href="{{ url_for('view_franchise_document', app_id=app.id, document_type='or') }}" target="_blank" rel="noopener noreferrer" style="color: #007bff;">View OR</a> |
-                    <a href="{{ url_for('view_franchise_document', app_id=app.id, document_type='cr') }}" target="_blank" rel="noopener noreferrer" style="color: #007bff;">View CR</a>
-                </td>
-                <td>
-                    {{ app.status }}
-                    {% if app.schedule %}
-                    <br><small style="color: #ff9800;">Schedule: {{ app.schedule }}</small>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if 'Pending' in app.status %}
-                    <form action="{{ url_for('approve_franchise', app_id=app.id) }}" method="POST">
-                        <input type="text" name="schedule" placeholder="Office Schedule" required style="width: 130px; background:#333; color:#fff; border:1px solid #555;">
-                        <button type="submit" class="btn-approve" style="border:none; cursor:pointer;">Approve</button>
+            <!-- Form to add a new Franchise Option -->
+            <div class="form-card form-box">
+                <div>
+                    <div class="form-card-head">
+                        <div class="form-card-icon">🤝</div>
+                        <h4>Add Franchise Option</h4>
+                    </div>
+                    <form action="{{ url_for('add_franchise_option') }}" method="POST" class="field-stack">
+                        <div>
+                            <label class="field-label">Option Title *</label>
+                            <input type="text" name="title" placeholder="e.g. Option 1: Full Cash Payment" required>
+                        </div>
+                        <div>
+                            <label class="field-label">Option Details *</label>
+                            <input type="text" name="details" placeholder="Brief description of terms &amp; inclusions" required>
+                        </div>
+                        <button type="submit" class="btn btn-add" style="width: 100%; margin-top: 4px;">+ Add Franchise Option</button>
                     </form>
-                    {% else %}
-                    Approved
-                    {% endif %}
-                    <form action="{{ url_for('delete_franchise_application', app_id=app.id) }}" method="POST" style="margin-top: 8px;">
-                        <button type="submit" class="btn-delete" style="border: none; cursor: pointer;" onclick="return confirm('Permanently delete the franchise application for {{ app.full_name | e }}? This cannot be undone.');">Delete Application</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
+                </div>
+            </div>
+        </div>
 
-    <!-- Section 4: Tour Applications Management -->
-    <h3>Tour Applications & Payment Receipts</h3>
-    <div class="admin-table-wrap admin-table-wrap-tours">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Applicant Details</th>
-                <th>Tour Info</th>
-                <th>Status</th>
-                <th>GCash Receipt</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tour in tour_apps %}
-            <tr>
-                <td>{{ tour.id }}</td>
-                <td>
-                    <strong>{{ tour.full_name }}</strong><br>
-                    Address: {{ tour.address }}<br>
-                    Contact: {{ tour.contact }}<br>
-                    Email: {{ tour.email or 'N/A' }}
-                </td>
-                <td>
-                    Package: {{ tour.tour_package }}<br>
-                    Date: {{ tour.tour_date }}<br>
-                    Pax: {{ tour.pax }}
-                </td>
-                <td>{{ tour.status }}</td>
-                <td>
-                    {% if tour.receipt %}
-                        <a href="{{ url_for('static', filename='uploads/' + tour.receipt) }}" target="_blank" style="color: #007bff;">View Receipt</a>
-                    {% else %}
-                        No Receipt Yet
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="{{ url_for('delete_tour', app_id=tour.id) }}" class="btn-delete" onclick="return confirm('Are you sure you want to delete this tour application?');">Delete</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
+        <!-- Section Filter Tabs & Instant Search -->
+        <div class="filter-toolbar">
+            <div class="filter-tabs" id="sectionFilterTabs">
+                <button type="button" class="filter-tab active" data-target="all">All Sections</button>
+                <button type="button" class="filter-tab" data-target="sec-reservations">Reservations ({{ reservations | length }})</button>
+                <button type="button" class="filter-tab" data-target="sec-franchise-apps">Franchise Applications ({{ franchise_apps | length }})</button>
+                <button type="button" class="filter-tab" data-target="sec-tours">Tour Applications ({{ tour_apps | length }})</button>
+                <button type="button" class="filter-tab" data-target="sec-gcash">GCash Payments ({{ gcash_payments | length }})</button>
+                <button type="button" class="filter-tab" data-target="sec-settings">Rates &amp; Franchise Options</button>
+            </div>
+            <div class="filter-search">
+                <input type="search" id="dashboardSearch" placeholder="🔍 Quick filter rows by name, van, destination, plate..." oninput="filterDashboardTables()">
+            </div>
+        </div>
 
-    <!-- Section 5: GCash Payments Management -->
-    <h3>GCash Payment</h3>
-    <div class="admin-table-wrap admin-table-wrap-payments">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Full Name</th>
-                <th>Contact Number</th>
-                <th>Receipt Screenshot</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for payment in gcash_payments %}
-            <tr>
-                <td>{{ payment.id }}</td>
-                <td>{{ payment.full_name }}</td>
-                <td>{{ payment.contact }}</td>
-                <td>
-                    {% if payment.receipt %}
-                        <a href="{{ url_for('static', filename='uploads/' + payment.receipt) }}" target="_blank" style="color: #007bff;">View Receipt</a>
-                    {% else %}
-                        No Receipt
-                    {% endif %}
-                </td>
-                <td>{{ payment.status }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
+        <!-- Section 6 (Moved up for priority, or visible in All): Reservation Management -->
+        <section class="section-card" data-section="sec-reservations">
+            <div class="section-card-header">
+                <div class="section-card-title">
+                    <h3>📅 Reservation List</h3>
+                    <span class="count-pill">{{ reservations | length }} records</span>
+                </div>
+            </div>
+            <div class="admin-table-wrap admin-table-wrap-reservations">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer Name</th>
+                            <th>Contact</th>
+                            <th>Rented Van</th>
+                            <th>Destination</th>
+                            <th>Pickup Schedule</th>
+                            <th>Status</th>
+                            <th>Receipt</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reservations %}
+                        <tr class="searchable-row">
+                            <td><span class="id-badge">#{{ r.id }}</span></td>
+                            <td><strong>{{ r.name }}</strong></td>
+                            <td>{{ r.contact }}</td>
+                            <td><strong>{{ r.vans }}</strong></td>
+                            <td>{{ r.destination or 'Not provided' }}</td>
+                            <td>
+                                <form action="{{ url_for('update_reservation_schedule', res_id=r.id) }}" method="POST" class="schedule-form">
+                                    <label>
+                                        Date
+                                        <input type="date" name="pickup_date" value="{{ r.pickup_date or '' }}" required>
+                                    </label>
+                                    <label>
+                                        Time
+                                        <input type="time" name="pickup_time" value="{{ r.pickup_time or '' }}" required>
+                                    </label>
+                                    <button type="submit" class="btn btn-primary btn-sm">Save Schedule</button>
+                                </form>
+                            </td>
+                            <td>
+                                <span class="status-badge {{ 'status-approved' if r.status == 'Approved' else 'status-pending' }}">
+                                    {{ r.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if r.receipt %}
+                                    <a href="{{ url_for('static', filename='uploads/' + r.receipt) }}" target="_blank" class="doc-link">🧾 View Receipt</a>
+                                {% else %}
+                                    <span class="meta-line">None</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-stack">
+                                    {% if r.status == 'Pending' %}
+                                        <a href="{{ url_for('approve_reservation', res_id=r.id) }}" class="btn btn-approve btn-sm">✓ Approve</a>
+                                    {% else %}
+                                        <span class="status-badge status-approved">✓ Approved</span>
+                                    {% endif %}
+                                    <form action="{{ url_for('delete_reservation', res_id=r.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-delete btn-sm" onclick="return confirm('Permanently delete this reservation for {{ r.name | e }}? This cannot be undone.');">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr class="empty-row">
+                            <td colspan="9">No van reservations recorded yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-    <!-- Section 6: Reservation Management -->
-    <h3>Reservation List</h3>
-    <div class="admin-table-wrap admin-table-wrap-reservations">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Contact</th>
-                <th>Rented Van</th>
-                <th>Destination</th>
-                <th>Pickup Schedule</th>
-                <th>Status</th>
-                <th>Receipt</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in reservations %}
-            <tr>
-                <td>{{ r.id }}</td>
-                <td>{{ r.name }}</td>
-                <td>{{ r.contact }}</td>
-                <td>{{ r.vans }}</td>
-                <td>{{ r.destination or 'Not provided' }}</td>
-                <td>
-                    <form action="{{ url_for('update_reservation_schedule', res_id=r.id) }}" method="POST" class="schedule-form">
-                        <label>
-                            Date
-                            <input type="date" name="pickup_date" value="{{ r.pickup_date or '' }}" required>
-                        </label>
-                        <label>
-                            Time
-                            <input type="time" name="pickup_time" value="{{ r.pickup_time or '' }}" required>
-                        </label>
-                        <button type="submit" class="btn-add">Save Schedule</button>
-                    </form>
-                </td>
-                <td>{{ r.status }}</td>
-                <td>
-                    {% if r.receipt %}
-                        <a href="{{ url_for('static', filename='uploads/' + r.receipt) }}" target="_blank" style="color: #007bff;">View Receipt</a>
-                    {% else %}
-                        None
-                    {% endif %}
-                </td>
-                <td>
-                    {% if r.status == 'Pending' %}
-                        <a href="{{ url_for('approve_reservation', res_id=r.id) }}" class="btn-approve">Approve</a>
-                    {% else %}
-                        Approved
-                    {% endif %}
-                    <form action="{{ url_for('delete_reservation', res_id=r.id) }}" method="POST" style="margin-top: 8px;">
-                        <button type="submit" class="btn-delete" style="border: none; cursor: pointer;" onclick="return confirm('Permanently delete this reservation for {{ r.name | e }}? This cannot be undone.');">
-                            Delete This Reservation
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
+        <!-- Section 3: Franchise Applications Management -->
+        <section class="section-card" data-section="sec-franchise-apps">
+            <div class="section-card-header">
+                <div class="section-card-title">
+                    <h3>📋 Franchise Applications (Option 1 &amp; 2)</h3>
+                    <span class="count-pill">{{ franchise_apps | length }} applicants</span>
+                </div>
+            </div>
+            <div class="admin-table-wrap admin-table-wrap-franchise">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Applicant Details</th>
+                            <th>Vehicle Info</th>
+                            <th>Documents (OR / CR)</th>
+                            <th>Status / Schedule</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in franchise_apps %}
+                        <tr class="searchable-row">
+                            <td><span class="id-badge">#{{ app.id }}</span></td>
+                            <td>
+                                <span class="applicant-name">{{ app.full_name }}</span>
+                                <span class="meta-line">📍 {{ app.address }}</span>
+                                <span class="meta-line">📞 {{ app.contact }} · ✉️ {{ app.email or 'N/A' }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ app.vehicle_type }}</strong> — {{ app.vehicle_model }}
+                                <span class="meta-line">Plate: <strong>{{ app.plate_number }}</strong></span>
+                            </td>
+                            <td>
+                                <div class="action-stack">
+                                    <a href="{{ url_for('view_franchise_document', app_id=app.id, document_type='or') }}" target="_blank" rel="noopener noreferrer" class="doc-link">📄 View OR</a>
+                                    <a href="{{ url_for('view_franchise_document', app_id=app.id, document_type='cr') }}" target="_blank" rel="noopener noreferrer" class="doc-link">📄 View CR</a>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-badge {{ 'status-pending' if 'Pending' in app.status else 'status-approved' }}">
+                                    {{ app.status }}
+                                </span>
+                                {% if app.schedule %}
+                                <span class="meta-line" style="margin-top: 4px; color: var(--amber); font-weight: 700;">🗓️ Schedule: {{ app.schedule }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-stack">
+                                    {% if 'Pending' in app.status %}
+                                    <form action="{{ url_for('approve_franchise', app_id=app.id) }}" method="POST" class="action-stack">
+                                        <input type="text" name="schedule" placeholder="Office Schedule" required style="width: 150px;">
+                                        <button type="submit" class="btn btn-approve btn-sm">✓ Approve</button>
+                                    </form>
+                                    {% else %}
+                                    <span class="status-badge status-approved">✓ Approved</span>
+                                    {% endif %}
+                                    <form action="{{ url_for('delete_franchise_application', app_id=app.id) }}" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-delete btn-sm" onclick="return confirm('Permanently delete the franchise application for {{ app.full_name | e }}? This cannot be undone.');">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr class="empty-row">
+                            <td colspan="6">No franchise applications submitted yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 4: Tour Applications Management -->
+        <section class="section-card" data-section="sec-tours">
+            <div class="section-card-header">
+                <div class="section-card-title">
+                    <h3>🏝️ Tour Applications &amp; Payment Receipts</h3>
+                    <span class="count-pill">{{ tour_apps | length }} bookings</span>
+                </div>
+            </div>
+            <div class="admin-table-wrap admin-table-wrap-tours">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Applicant Details</th>
+                            <th>Tour Info</th>
+                            <th>Status</th>
+                            <th>GCash Receipt</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tour in tour_apps %}
+                        <tr class="searchable-row">
+                            <td><span class="id-badge">#{{ tour.id }}</span></td>
+                            <td>
+                                <span class="applicant-name">{{ tour.full_name }}</span>
+                                <span class="meta-line">📍 {{ tour.address }}</span>
+                                <span class="meta-line">📞 {{ tour.contact }} · ✉️ {{ tour.email or 'N/A' }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ tour.tour_package }}</strong>
+                                <span class="meta-line">🗓️ Date: {{ tour.tour_date }} · 👥 Pax: <strong>{{ tour.pax }}</strong></span>
+                            </td>
+                            <td>
+                                <span class="status-badge {{ 'status-info' if 'Receipt' in tour.status else ('status-approved' if tour.status == 'Approved' else 'status-pending') }}">
+                                    {{ tour.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if tour.receipt %}
+                                    <a href="{{ url_for('static', filename='uploads/' + tour.receipt) }}" target="_blank" class="doc-link">🧾 View Receipt</a>
+                                {% else %}
+                                    <span class="meta-line">No Receipt Yet</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('delete_tour', app_id=tour.id) }}" class="btn btn-delete btn-sm" onclick="return confirm('Are you sure you want to delete this tour application?');">Delete</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr class="empty-row">
+                            <td colspan="6">No tour applications submitted yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 5: GCash Payments Management -->
+        <section class="section-card" data-section="sec-gcash">
+            <div class="section-card-header">
+                <div class="section-card-title">
+                    <h3>💳 GCash Payments</h3>
+                    <span class="count-pill">{{ gcash_payments | length }} receipts</span>
+                </div>
+            </div>
+            <div class="admin-table-wrap admin-table-wrap-payments">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Full Name</th>
+                            <th>Contact Number</th>
+                            <th>Receipt Screenshot</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in gcash_payments %}
+                        <tr class="searchable-row">
+                            <td><span class="id-badge">#{{ payment.id }}</span></td>
+                            <td><strong>{{ payment.full_name }}</strong></td>
+                            <td>{{ payment.contact }}</td>
+                            <td>
+                                {% if payment.receipt %}
+                                    <a href="{{ url_for('static', filename='uploads/' + payment.receipt) }}" target="_blank" class="doc-link">🧾 View Receipt</a>
+                                {% else %}
+                                    <span class="meta-line">No Receipt</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status-badge {{ 'status-approved' if payment.status == 'Approved' else 'status-pending' }}">
+                                    {{ payment.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr class="empty-row">
+                            <td colspan="5">No GCash payment receipts uploaded yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 1: Destination Rates Management -->
+        <section class="section-card" data-section="sec-settings">
+            <div class="section-card-header">
+                <div class="section-card-title">
+                    <h3>📍 Pick-up &amp; Destination Rates Management</h3>
+                    <span class="count-pill">{{ rates | length }} routes</span>
+                </div>
+            </div>
+            <div class="admin-table-wrap admin-table-wrap-rates">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">ID</th>
+                            <th>Pick-up Location, Destination &amp; 2-Day Base Rate (₱)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rate in rates %}
+                        <tr class="searchable-row">
+                            <td><span class="id-badge">#{{ rate.id }}</span></td>
+                            <td>
+                                <form action="{{ url_for('edit_rate', rate_id=rate.id) }}" method="POST" class="inline-edit-form">
+                                    <input type="text" name="pickup_location" value="{{ rate.pickup_location }}" placeholder="Pick-up" required>
+                                    <input type="text" name="destination" value="{{ rate.destination }}" placeholder="Destination" required>
+                                    <input type="text" name="rate_per_day" value="{{ '{:,.0f}'.format(rate.rate_per_day) if rate.rate_per_day == (rate.rate_per_day|int) else '{:,.2f}'.format(rate.rate_per_day) }}" placeholder="2-day base rate (₱)" required style="max-width: 160px;">
+                                    <button type="submit" class="btn btn-primary btn-sm">Update Rate</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr class="empty-row">
+                            <td colspan="2">No destination rates configured yet. Use "Add Pick-up &amp; Destination Rate" above to add routes.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 2: Franchise Options Management -->
+        <section class="section-card" data-section="sec-settings">
+            <div class="section-card-header">
+                <div class="section-card-title">
+                    <h3>🤝 Franchise Options Management</h3>
+                    <span class="count-pill">{{ franchise_options | length }} options</span>
+                </div>
+            </div>
+            <div class="admin-table-wrap admin-table-wrap-options">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">ID</th>
+                            <th>Option Title &amp; Details Settings</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for option in franchise_options %}
+                        <tr class="searchable-row">
+                            <td><span class="id-badge">#{{ option.id }}</span></td>
+                            <td>
+                                <form action="{{ url_for('edit_franchise_option', option_id=option.id) }}" method="POST" class="inline-edit-form">
+                                    <input type="text" name="title" value="{{ option.title }}" required style="max-width: 260px;">
+                                    <input type="text" name="details" value="{{ option.details }}" required style="min-width: 280px;">
+                                    <button type="submit" class="btn btn-primary btn-sm">Update Option</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr class="empty-row">
+                            <td colspan="2">No franchise options configured yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Section filter tabs
+        document.querySelectorAll('#sectionFilterTabs .filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('#sectionFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const target = tab.getAttribute('data-target');
+                document.querySelectorAll('.section-card[data-section]').forEach(sec => {
+                    if (target === 'all' || sec.getAttribute('data-section') === target) {
+                        sec.style.display = '';
+                    } else {
+                        sec.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // Quick table row search
+        function filterDashboardTables() {
+            const q = (document.getElementById('dashboardSearch').value || '').toLowerCase().trim();
+            document.querySelectorAll('tr.searchable-row').forEach(row => {
+                const text = (row.innerText || '').toLowerCase();
+                const inputs = Array.from(row.querySelectorAll('input')).map(i => (i.value || '').toLowerCase()).join(' ');
+                const match = !q || text.includes(q) || inputs.includes(q);
+                row.style.display = match ? '' : 'none';
+            });
+        }
+    </script>
 
 </body>
 </html>
