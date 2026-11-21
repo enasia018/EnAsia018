@@ -442,7 +442,8 @@
                     <tbody>
                         {% for m in members %}
                         <tr class="member-row {{ 'selected' if selected_member and selected_member.id == m.id else '' }}"
-                            data-search="{{ (m.full_name ~ ' ' ~ m.member_code ~ ' ' ~ (m.plate_number or '') ~ ' ' ~ (m.mv_file_number or '') ~ ' ' ~ (m.franchise_case or '') ~ ' ' ~ (m.batch_number or '') ~ ' ' ~ (m.unit_name or '') ~ ' ' ~ (m.vehicle or '')) | lower }}"
+                            data-batch="{{ (m.batch_number or '') | lower | trim }}"
+                            data-search="{{ (m.full_name ~ ' | ' ~ m.member_code ~ ' | ' ~ (m.plate_number or '') ~ ' | ' ~ (m.mv_file_number or '') ~ ' | ' ~ (m.franchise_case or '') ~ ' | ' ~ (m.batch_number or '') ~ ' | ' ~ (m.unit_name or '') ~ ' | ' ~ (m.vehicle or '')) | lower }}"
                             onclick="window.location.href='{{ url_for('admin_members_page', selected_id=m.id) }}'">
                             <td>
                                 <span class="m-name">{{ m.full_name }}</span>
@@ -878,13 +879,40 @@
     </div>
 
     <script>
+        function escapeRegExp(s) {
+            return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
         function filterMemberRows() {
-            const q = document.getElementById('memberSearch').value.toLowerCase().trim();
+            const q = document.getElementById('memberSearch').value.toLowerCase().trim().replace(/\s+/g, ' ');
             const rows = document.querySelectorAll('#memberListTable tbody tr.member-row');
             let count = 0;
+            const isBatchQuery = q.startsWith('batch');
+            const isExactBatchNum = /^batch\s+\d+$/.test(q);
+            let pattern = null;
+            if (q && !isBatchQuery) {
+                let pat = '(?:^|[\\s\\-./,(|])' + escapeRegExp(q);
+                if (/\d$/.test(q)) {
+                    pat += '(?!\\d)';
+                }
+                pattern = new RegExp(pat, 'i');
+            }
             rows.forEach(row => {
-                const hay = row.getAttribute('data-search') || '';
-                const match = !q || hay.includes(q);
+                let match = false;
+                if (!q) {
+                    match = true;
+                } else if (isBatchQuery) {
+                    const batchVal = (row.getAttribute('data-batch') || '').replace(/\s+/g, ' ');
+                    if (q === 'batch') {
+                        match = Boolean(batchVal);
+                    } else if (isExactBatchNum) {
+                        match = (batchVal === q);
+                    } else {
+                        match = (batchVal === q) || (batchVal.startsWith(q) && (batchVal.length === q.length || !/\d/.test(batchVal[q.length])));
+                    }
+                } else {
+                    const hay = (row.getAttribute('data-search') || '').replace(/\s+/g, ' ');
+                    match = pattern.test(hay);
+                }
                 row.style.display = match ? '' : 'none';
                 if (match) count++;
             });
