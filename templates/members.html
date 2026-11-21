@@ -71,6 +71,49 @@
             font-weight: 600;
             margin-bottom: 18px;
         }
+        .alert-success {
+            background: #e6f4ea;
+            border: 1px solid #b7dfc4;
+            color: #1b5e20;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        .first-login-box {
+            background: #fffbeb;
+            border: 2px solid #f59e0b;
+            border-radius: 14px;
+            padding: 22px 24px;
+            margin-bottom: 26px;
+        }
+        .first-login-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #92400e;
+            margin: 0 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .first-login-desc {
+            font-size: 0.9rem;
+            color: #78350f;
+            margin: 0 0 16px;
+            line-height: 1.5;
+        }
+        .pw-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+        @media (max-width: 700px) {
+            .pw-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
         .form-group {
             margin-bottom: 16px;
         }
@@ -236,8 +279,67 @@
                 <h1 class="profile-name">{{ member.full_name }}</h1>
                 <div class="profile-code">{{ member.member_code }}</div>
             </div>
-            <a href="{{ url_for('members') }}" class="btn-logout">Log Out</a>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                {% if not member.must_change_password %}
+                <button type="button" class="btn-logout" style="cursor: pointer;" onclick="var b=document.getElementById('optionalPwBox'); b.style.display=(b.style.display==='none'?'block':'none');">🔑 Change Password</button>
+                {% endif %}
+                <a href="{{ url_for('member_logout') }}" class="btn-logout">Log Out</a>
+            </div>
         </div>
+
+        {% if pw_success %}
+        <div class="alert-success" style="margin-top: 20px;">✅ {{ pw_success }}</div>
+        {% endif %}
+
+        {% if member.must_change_password %}
+        <div class="first-login-box" style="margin-top: 22px;">
+            <div class="first-login-title">🔒 To secure your account, please change your password upon first login.</div>
+            <p class="first-login-desc">
+                You are currently signed in using the temporary default password. Please create a new personal password below to secure your member account.
+            </p>
+            {% if pw_error %}
+            <div class="alert-error">{{ pw_error }}</div>
+            {% endif %}
+            <form method="POST" action="{{ url_for('member_change_password') }}">
+                <input type="hidden" name="member_db_id" value="{{ member.id }}">
+                <div class="pw-form-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="new_password">New Password (min. 6 characters)</label>
+                        <input type="password" id="new_password" name="new_password" placeholder="Enter new password" minlength="6" required autocomplete="new-password">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="confirm_password">Confirm New Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter new password" minlength="6" required autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="btn-submit" style="width: auto; margin-top: 0; white-space: nowrap;">Update Password</button>
+                </div>
+            </form>
+        </div>
+        {% else %}
+        <div id="optionalPwBox" class="first-login-box" style="margin-top: 22px; background: #f8fafc; border-color: #cbd5e1; display: {{ 'block' if pw_error else 'none' }};">
+            <div class="first-login-title" style="color: #0f4c5c;">🔑 Change Account Password</div>
+            <p class="first-login-desc" style="color: #475569;">
+                Enter and confirm your new password below.
+            </p>
+            {% if pw_error %}
+            <div class="alert-error">{{ pw_error }}</div>
+            {% endif %}
+            <form method="POST" action="{{ url_for('member_change_password') }}">
+                <input type="hidden" name="member_db_id" value="{{ member.id }}">
+                <div class="pw-form-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="opt_new_password">New Password (min. 6 characters)</label>
+                        <input type="password" id="opt_new_password" name="new_password" placeholder="Enter new password" minlength="6" required autocomplete="new-password">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="opt_confirm_password">Confirm New Password</label>
+                        <input type="password" id="opt_confirm_password" name="confirm_password" placeholder="Re-enter new password" minlength="6" required autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="btn-submit" style="width: auto; margin-top: 0; white-space: nowrap;">Save New Password</button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
 
         <h2 class="section-heading">Member and franchise details</h2>
 

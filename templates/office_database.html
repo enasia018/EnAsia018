@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enasia Transport Member Database</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='office_db/styles.css') }}">
+    <script defer src="{{ url_for('static', filename='office_db/renderer.js') }}"></script>
+  </head>
+  <body data-api-base="{{ url_for('office_db.index').rstrip('/') }}" data-logo-url="{{ url_for('static', filename='office_db/enasia-logo.jpg') }}?v=2" data-admin-url="{{ url_for('admin_dashboard') }}">
+    <header class="topbar">
+      <div class="brand">
+        <img id="brand-logo" class="brand-logo" src="{{ url_for('static', filename='office_db/enasia-logo.jpg') }}?v=2" alt="Enasia Transport logo" draggable="false">
+        <div>
+          <p class="eyebrow">OFFICE DATABASE</p>
+          <h1>Enasia Transport</h1>
+        </div>
+      </div>
+      <div id="account-bar" class="account-bar hidden">
+        <span id="signed-in-user"></span>
+        <button id="logout-button" class="button button-quiet">Sign out</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="auth-card" class="card narrow hidden">
+        <p id="auth-kicker" class="eyebrow">SECURE DATABASE</p>
+        <h2 id="auth-title">Sign in</h2>
+        <p id="auth-description">Sign in with a staff account to search member and payment records.</p>
+        <div id="admin-resume-wrap" class="stack hidden" style="margin-bottom: 18px;">
+          <button id="admin-resume-button" type="button" class="button button-primary">Continue as Website Admin</button>
+          <p class="muted" style="margin: 0; text-align: center;">Or sign in below with a staff account (Admin / Editor / View only)</p>
+        </div>
+        <form id="auth-form" class="stack">
+          <label>Username
+            <input id="username" autocomplete="username" required maxlength="50">
+          </label>
+          <label>Password
+            <input id="password" type="password" autocomplete="current-password" required maxlength="200">
+          </label>
+          <button id="auth-submit" class="button button-primary">Sign in</button>
+        </form>
+      </section>
+
+      <section id="app-panel" class="hidden">
+        <div class="toolbar">
+          <div>
+            <p class="eyebrow">MEMBER RECORDS</p>
+            <h2>Member directory</h2>
+          </div>
+          <div class="toolbar-actions">
+            <button id="manage-users-button" class="button button-secondary hidden">Manage users</button>
+            <button id="export-button" class="button button-secondary">Export Excel</button>
+            <button id="import-button" class="button button-secondary">Import Excel</button>
+            <input id="import-file" class="hidden" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+            <button id="new-member-button" class="button button-primary">+ Add member</button>
+          </div>
+        </div>
+        <section id="import-result" class="card hidden" aria-live="polite"></section>
+        <div class="layout">
+          <section class="card directory-card">
+            <label class="search-label">Search members
+              <input id="member-search" type="search" placeholder="Name, member code, plate, MV file, case, or batch">
+            </label>
+            <p id="member-count" class="muted"></p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Member</th><th>Unit / vehicle</th><th>Plate</th><th>Status</th></tr></thead>
+                <tbody id="member-rows"></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="detail-panel" class="card detail-card">
+            <div class="empty-state">
+              <span class="empty-icon">◎</span>
+              <h3>Select a member</h3>
+              <p>Choose someone from the directory to view their franchise, vehicle, payments, and documents.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+      <p id="notice" class="notice hidden" role="status"></p>
+    </main>
+
+    <dialog id="member-dialog" class="modal">
+      <form id="member-form" class="modal-form">
+        <div class="modal-heading"><div><p class="eyebrow">MEMBER PROFILE</p><h2 id="member-form-title">Add a member</h2></div><button type="button" class="icon-button" data-close="member-dialog" aria-label="Close">×</button></div>
+        <input id="member-id" type="hidden">
+        <div class="form-grid">
+          <label>Full name *<input name="full_name" required maxlength="255"></label>
+          <label>Member code<input name="member_code" maxlength="255"></label>
+          <label class="wide">Address<input name="address" maxlength="2000"></label>
+          <label>ID number<input name="id_number" maxlength="255"></label>
+          <label>Driver license number<input name="driver_license_number" maxlength="255"></label>
+          <label>Unit name<input name="unit_name" maxlength="255"></label>
+          <label>Vehicle make<input name="vehicle_make" maxlength="255"></label>
+          <label>Vehicle model<input name="vehicle_model" maxlength="255"></label>
+          <label>Vehicle year<input name="vehicle_year" maxlength="255"></label>
+          <label>Plate number<input name="plate_number" maxlength="255"></label>
+          <label>MV file number<input name="mv_file_number" maxlength="255"></label>
+          <label>Franchise case number<input name="franchise_case_number" maxlength="255"></label>
+          <label>Batch number<input name="batch_number" maxlength="255"></label>
+          <label>Franchise start date<input name="franchise_start_date" type="date"></label>
+          <label>Monthly dues amount<input name="monthly_dues_amount" type="number" min="0" step="0.01" value="0"></label>
+          <label>Due day (1-28)<input name="due_day" type="number" min="1" max="28"></label>
+          <label>Status<select name="status"><option>Active</option><option>Pending</option><option>Inactive</option></select></label>
+          <label>MOA status<input name="moa_status" maxlength="255"></label>
+          <label>Lease status<input name="lease_status" maxlength="255"></label>
+          <label>PA status<select name="pa_status"><option>Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+          <label>CPC status<select name="cpc_status"><option>Not recorded</option><option>Yes</option><option>No</option><option>Pending</option></select></label>
+          <label>Original OR/CR<input name="original_or_cr" maxlength="255"></label>
+          <label>Facebook name<input name="facebook_name" maxlength="255"></label>
+          <label>Terms<input name="terms" maxlength="255"></label>
+          <label class="wide">Notes<textarea name="notes" rows="2" maxlength="2000"></textarea></label>
+        </div>
+        <div class="modal-actions"><button type="button" class="button button-quiet" data-close="member-dialog">Cancel</button><button class="button button-primary">Save member</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="payment-dialog" class="modal">
+      <form id="payment-form" class="modal-form stack">
+        <div class="modal-heading"><div><p class="eyebrow">PAYMENT RECORD</p><h2 id="payment-form-title">Add payment</h2></div><button type="button" class="icon-button" data-close="payment-dialog" aria-label="Close">×</button></div>
+        <input id="payment-member-id" type="hidden">
+        <input id="payment-id" type="hidden">
+        <label>Payment type
+          <select name="payment_type"><option>Membership Fee</option><option>Franchise Processing Fee</option><option>Other Payment</option></select>
+        </label>
+        <label>Payment purpose<input name="payment_purpose" maxlength="255"></label>
+        <label>Amount<input name="amount" type="number" min="0.01" step="0.01" required></label>
+        <label>Payment date<input name="payment_date" type="date" required></label>
+        <label>Period covered (monthly dues only)<input name="period_covered" type="month"></label>
+        <label>Receipt number<input name="receipt_number" maxlength="100"></label>
+        <label>Voucher<input name="voucher" maxlength="100"></label>
+        <label>Balance<input name="balance" type="number" min="0" step="0.01"></label>
+        <label>Payment method<input name="payment_method" maxlength="80" placeholder="Cash, bank transfer, etc."></label>
+        <label>Notes<textarea name="notes" rows="2" maxlength="1000"></textarea></label>
+        <div class="modal-actions"><button type="button" class="button button-quiet" data-close="payment-dialog">Cancel</button><button id="payment-submit-button" class="button button-primary">Save payment</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="dues-dialog" class="modal">
+      <form id="dues-form" class="modal-form stack">
+        <div class="modal-heading"><div><p class="eyebrow">MONTHLY DUES</p><h2 id="dues-form-title">Record dues status</h2></div><button type="button" class="icon-button" data-close="dues-dialog" aria-label="Close">×</button></div>
+        <input id="dues-member-id" type="hidden">
+        <input id="dues-id" type="hidden">
+        <label>Month<input name="period" type="month" required></label>
+        <label>Status<select name="status"><option>Paid</option><option>Unpaid</option><option>Partial</option><option>Pending</option><option>Waived</option></select></label>
+        <label>Amount due or received<input name="amount" type="number" min="0" step="0.01" value="0"></label>
+        <label>Notes<textarea name="notes" rows="2" maxlength="1000"></textarea></label>
+        <div class="modal-actions"><button type="button" class="button button-quiet" data-close="dues-dialog">Cancel</button><button id="dues-submit-button" class="button button-primary">Save dues status</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="document-dialog" class="modal">
+      <form id="document-form" class="modal-form stack">
+        <div class="modal-heading"><div><p class="eyebrow">MEMBER DOCUMENT</p><h2>Edit document details</h2></div><button type="button" class="icon-button" data-close="document-dialog" aria-label="Close">×</button></div>
+        <input id="document-id" type="hidden">
+        <label>Document type<input name="document_type" required maxlength="100"></label>
+        <label>Issue date<input name="issue_date" type="date"></label>
+        <label>Expiry date<input name="expiry_date" type="date"></label>
+        <p class="muted">To replace the uploaded file, use the Replace file button on the member's document record.</p>
+        <div class="modal-actions"><button type="button" class="button button-quiet" data-close="document-dialog">Cancel</button><button class="button button-primary">Save details</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="document-upload-dialog" class="modal">
+      <form id="document-upload-form" class="modal-form stack">
+        <div class="modal-heading"><div><p class="eyebrow">MEMBER DOCUMENT</p><h2 id="document-upload-title">Upload document</h2></div><button type="button" class="icon-button" data-close="document-upload-dialog" aria-label="Close">×</button></div>
+        <input id="document-upload-member-id" type="hidden">
+        <input id="document-upload-id" type="hidden">
+        <label>Document type<input name="document_type" required maxlength="100" placeholder="For example: OR, CR, or Driver License"></label>
+        <label id="document-upload-issue-date-label" hidden>Issue date<input name="issue_date" type="date"></label>
+        <label id="document-upload-expiry-date-label" hidden>Expiry date<input name="expiry_date" type="date"></label>
+        <label id="document-upload-file-label">Select PDF, JPG, or PNG file<input id="document-upload-file" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required></label>
+        <div class="modal-actions"><button type="button" class="button button-quiet" data-close="document-upload-dialog">Cancel</button><button class="button button-primary">Upload document</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="users-dialog" class="modal">
+      <div class="modal-form">
+        <div class="modal-heading">
+          <div><p class="eyebrow">ADMINISTRATION</p><h2>User accounts</h2></div>
+          <button type="button" class="icon-button" data-close="users-dialog" aria-label="Close">×</button>
+        </div>
+        <div id="user-list" class="payment-list"></div>
+        <form id="user-form" class="stack">
+          <h3>Create a user</h3>
+          <label>Username<input name="username" required minlength="3" maxlength="50" autocomplete="off"></label>
+          <label>Temporary password<input name="password" type="password" required minlength="6" maxlength="200" autocomplete="new-password"></label>
+          <label>Role
+            <select name="role"><option>Editor</option><option>View only</option><option>Admin</option></select>
+          </label>
+          <p class="muted">Passwords must be at least 6 characters. Accounts created here can sign in to both the Admin Dashboard and the EnAsia Database System.</p>
+          <div class="modal-actions"><button class="button button-primary">Create user</button></div>
+        </form>
+      </div>
+    </dialog>
+  </body>
+</html>

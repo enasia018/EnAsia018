@@ -398,6 +398,10 @@
         <div class="header-actions">
             <a href="{{ url_for('admin_dashboard') }}" class="btn-outline">← Admin Dashboard</a>
             <a href="{{ url_for('members') }}" target="_blank" class="btn-outline">Public Member Portal ↗</a>
+            <form method="POST" action="{{ url_for('admin_reset_all_member_passwords') }}"
+                  onsubmit="return confirm('Reset ALL member passwords to Password123 and require password change upon next login?');" style="display:inline;">
+                <button type="submit" class="btn-warn-outline" style="padding: 10px 14px; font-size: 0.85rem; border-radius: 10px;">🔑 Reset All Passwords to Password123</button>
+            </form>
             <a href="{{ url_for('admin_export_members') }}" class="btn-outline">Export Excel</a>
             <button type="button" class="btn-outline" onclick="document.getElementById('importModal').style.display='flex'">Import Excel</button>
             <button type="button" class="btn-primary" onclick="document.getElementById('addMemberModal').style.display='flex'">+ Add member</button>
@@ -575,6 +579,16 @@
                     <span class="detail-label">Terms</span>
                     <span class="detail-value">{{ selected_member.terms or '—' }}</span>
                 </div>
+                <div class="detail-field">
+                    <span class="detail-label">Portal Password Status</span>
+                    <span class="detail-value">
+                        {% if selected_member.must_change_password %}
+                        <span style="color:#b45309;">Default / Temporary (First-login change required)</span>
+                        {% else %}
+                        <span style="color:#1e7045;">Secured (Changed by member)</span>
+                        {% endif %}
+                    </span>
+                </div>
             </div>
             {% else %}
             <div style="text-align:center; padding: 64px 20px; color:#6c8890;">
@@ -604,7 +618,7 @@
                     </div>
                     <div class="form-field">
                         <label>Member Password *</label>
-                        <input type="text" name="password" placeholder="Assign login password" required>
+                        <input type="text" name="password" value="Password123" placeholder="Assign login password" required>
                     </div>
                     <div class="form-field">
                         <label>Status</label>
@@ -825,7 +839,7 @@
             <form method="POST" action="{{ url_for('admin_reset_member_password', member_db_id=selected_member.id) }}">
                 <div class="form-field">
                     <label>New Password *</label>
-                    <input type="text" name="new_password" placeholder="Enter new password" required autocomplete="off">
+                    <input type="text" name="new_password" value="Password123" placeholder="Enter new password" required autocomplete="off">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-outline" onclick="document.getElementById('resetPwModal').style.display='none'">Cancel</button>
@@ -850,7 +864,7 @@
                 </div>
                 <div class="form-field">
                     <label>Default Password for Imported Members</label>
-                    <input type="text" name="default_password" value="enasia2026" required>
+                    <input type="text" name="default_password" value="Password123" required>
                     <small style="color:#6c8890; font-size:0.76rem; display:block; margin-top:4px;">
                         Used when a row does not have a "Password" column. You can reset individual passwords anytime.
                     </small>
