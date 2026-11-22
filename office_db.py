@@ -1840,69 +1840,56 @@ def api_monthly_dues_item(due_id):
     return _json_response({"success": True})
 
 
-@office_db_bp.route("/api/members/<member_id>/documents", methods=["POST"])
-def api_member_documents_upload(member_id):
-    OfficeMember = _models["OfficeMember"]
+def _build_verified_office_document(member_id, item, existing_doc=None):
     OfficeDocument = _models["OfficeDocument"]
-    _require_auth(require_write=True)
-    if not UUID_RE.match(member_id) or not _db.session.get(OfficeMember, member_id):
-        raise ApiError("Member not found.", 404)
-
-    body = _read_json_body()
-    doc_id_in = _validate_text(body.get("document_id") or "", "Document ID", max_len=64)
-    existing_doc = None
-    if doc_id_in:
-        existing_doc = OfficeDocument.query.filter_by(
-            id=doc_id_in, member_id=member_id
-        ).first()
-        if not existing_doc:
-            raise ApiError("Document not found for this member.", 404)
-
+    raw_filename = _validate_text(
+        item.get("filename", ""), "File name", required=True, max_len=255
+    )
+    filename = re.sub(r"[\x00-\x1f]", "_", os.path.basename(raw_filename))
+    default_type = os.path.splitext(filename)[0][:100] or "Document"
     document_type = _validate_text(
-        body.get("document_type")
-        or (existing_doc.document_type if existing_doc else ""),
+        item.get("document_type")
+        or (existing_doc.document_type if existing_doc else default_type),
         "Document type",
         required=True,
         max_len=100,
     )
     issue_date = _validate_date(
-        body.get("issue_date")
-        if body.get("issue_date") is not None
+        item.get("issue_date")
+        if item.get("issue_date") is not None
         else (existing_doc.issue_date if existing_doc else ""),
         "Issue date",
     )
     expiry_date = _validate_date(
-        body.get("expiry_date")
-        if body.get("expiry_date") is not None
+        item.get("expiry_date")
+        if item.get("expiry_date") is not None
         else (existing_doc.expiry_date if existing_doc else ""),
         "Expiry date",
     )
-    raw_filename = _validate_text(
-        body.get("filename", ""), "File name", required=True, max_len=255
-    )
-    filename = re.sub(r"[\x00-\x1f]", "_", os.path.basename(raw_filename))
     mime_type = _validate_text(
-        body.get("mime_type", ""), "File type", required=True, max_len=100
+        item.get("mime_type", ""), "File type", required=True, max_len=100
     )
     ext = os.path.splitext(filename)[1].lower()
     if ext not in {".pdf", ".jpg", ".jpeg", ".png"}:
-        raise ApiError("Upload PDF, JPG, or PNG documents only.", 400)
+        raise ApiError(f'"{filename}": Upload PDF, JPG, or PNG documents only.', 400)
     if mime_type not in {"application/pdf", "image/jpeg", "image/png"}:
         raise ApiError(
-            "File content type does not match an allowed PDF, JPG, or PNG document.",
+            f'"{filename}": File content type does not match an allowed PDF, JPG, or PNG document.',
             400,
         )
 
-    b64_content = body.get("content_base64")
+    b64_content = item.get("content_base64")
     if not isinstance(b64_content, str) or not BASE64_RE.match(b64_content):
-        raise ApiError("Document file content is invalid.", 400)
+        raise ApiError(f'"{filename}": Document file content is invalid.', 400)
     try:
         content = base64.b64decode(b64_content, validate=True)
     except Exception:
-        raise ApiError("Document file content is invalid.", 400)
+        raise ApiError(f'"{filename}": Document file content is invalid.', 400)
 
     if not content or len(content) > MAX_UPLOAD_BYTES:
-        raise ApiError("Documents must be between 1 byte and 20 MB.", 400)
+        raise ApiError(
+            f'"{filename}": Documents must be between 1 byte and 20 MB.', 400
+        )
 
     sig_ok = (
         (ext == ".pdf" and content[:5] == b"%PDF-")
@@ -1910,7 +1897,10 @@ def api_member_documents_upload(member_id):
         or (ext == ".png" and content[:8] == b"\x89PNG\r\n\x1a\n")
     )
     if not sig_ok:
-        raise ApiError("The uploaded file content does not match its file type.", 400)
+        raise ApiError(
+            f'"{filename}": The uploaded file content does not match its file type.',
+            400,
+        )
 
     new_uuid = str(uuid.uuid4())
     stored_filename = f"{new_uuid}{ext}"
@@ -1923,10 +1913,9 @@ def api_member_documents_upload(member_id):
         existing_doc.size_bytes = len(content)
         existing_doc.issue_date = issue_date
         existing_doc.expiry_date = expiry_date
-        _db.session.commit()
-        return _json_response({"id": existing_doc.id}, 200)
+        return existing_doc
 
-    doc = OfficeDocument(
+    return OfficeDocument(
         id=new_uuid,
         member_id=member_id,
         document_type=document_type,
@@ -1939,9 +1928,55 @@ def api_member_documents_upload(member_id):
         expiry_date=expiry_date,
         created_at=_now_iso(),
     )
-    _db.session.add(doc)
+
+
+@office_db_bp.route("/api/members/<member_id>/documents", methods=["POST"])
+@office_db_bp.route("/api/members/<member_id>/documents/batch", methods=["POST"])
+def api_member_documents_upload(member_id):
+    OfficeMember = _models["OfficeMember"]
+    OfficeDocument = _models["OfficeDocument"]
+    _require_auth(require_write=True)
+    if not UUID_RE.match(member_id) or not _db.session.get(OfficeMember, member_id):
+        raise ApiError("Member not found.", 404)
+
+    body = _read_json_body()
+
+    # Batch upload of multiple documents
+    if isinstance(body.get("documents"), list):
+        items = body["documents"]
+        if not items:
+            raise ApiError("Choose at least one PDF, JPG, or PNG document to upload.", 400)
+        if len(items) > 50:
+            raise ApiError("You can upload up to 50 documents at a time.", 400)
+
+        created_ids = []
+        try:
+            for item in items:
+                if not isinstance(item, dict):
+                    raise ApiError("Invalid document item.", 400)
+                doc = _build_verified_office_document(member_id, item)
+                _db.session.add(doc)
+                created_ids.append(doc.id)
+            _db.session.commit()
+        except Exception:
+            _db.session.rollback()
+            raise
+        return _json_response({"ids": created_ids, "count": len(created_ids)}, 201)
+
+    doc_id_in = _validate_text(body.get("document_id") or "", "Document ID", max_len=64)
+    existing_doc = None
+    if doc_id_in:
+        existing_doc = OfficeDocument.query.filter_by(
+            id=doc_id_in, member_id=member_id
+        ).first()
+        if not existing_doc:
+            raise ApiError("Document not found for this member.", 404)
+
+    doc = _build_verified_office_document(member_id, body, existing_doc=existing_doc)
+    if not existing_doc:
+        _db.session.add(doc)
     _db.session.commit()
-    return _json_response({"id": new_uuid}, 201)
+    return _json_response({"id": doc.id}, 200 if existing_doc else 201)
 
 
 @office_db_bp.route("/api/documents/<document_id>", methods=["GET", "PUT", "DELETE"])
