@@ -7,26 +7,26 @@
     <style>
         :root {
             color-scheme: light;
-            --bg: #f3f6f8;
-            --card: #ffffff;
-            --card-alt: #f8fafc;
-            --border: #e1e8ed;
-            --border-strong: #cbd5e1;
-            --ink: #0f2533;
-            --ink-soft: #334e5e;
-            --muted: #647886;
-            --navy: #123b54;
-            --navy-dark: #0c2a3d;
-            --teal: #126482;
-            --teal-hover: #0e5068;
-            --teal-light: #e8f4f8;
+            --bg: #eae5e3;
+            --card: #faf8f7;
+            --card-alt: #f3ecea;
+            --border: #dfd3cf;
+            --border-strong: #d4c3be;
+            --ink: #231717;
+            --ink-soft: #4e3838;
+            --muted: #6e5757;
+            --navy: #420c10;
+            --navy-dark: #2d070a;
+            --teal: #581318;
+            --teal-hover: #420c10;
+            --teal-light: #f5ebd6;
             --green: #16794c;
             --green-hover: #11613c;
             --green-bg: #e6f6ee;
             --amber: #b45309;
             --amber-bg: #fef3c7;
-            --blue: #1d4ed8;
-            --blue-bg: #dbeafe;
+            --blue: #581318;
+            --blue-bg: #f5ebd6;
             --danger: #c53030;
             --danger-hover: #9b2c2c;
             --danger-bg: #fff5f5;
@@ -53,7 +53,8 @@
 
         /* Top Navigation Header */
         .topbar {
-            background: linear-gradient(135deg, var(--navy) 0%, #164b6a 100%);
+            background: linear-gradient(135deg, #32080b 0%, #420c10 52%, #68181f 100%);
+            border-bottom: 2px solid #c9a227;
             color: #ffffff;
             padding: 16px 36px;
             display: flex;
@@ -78,8 +79,8 @@
             height: 54px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.25);
-            background: #0c2a3d;
+            border: 2px solid rgba(212, 175, 55, 0.65);
+            background: #32080b;
         }
 
         .brand-eyebrow {
@@ -87,7 +88,7 @@
             font-weight: 800;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: #9ec5db;
+            color: #e6c65a;
             margin: 0 0 2px 0;
         }
 
@@ -119,8 +120,8 @@
         }
 
         .user-role-tag {
-            background: #22c55e;
-            color: #052e16;
+            background: #d4af37;
+            color: #2d070a;
             font-size: 0.72rem;
             font-weight: 800;
             padding: 2px 8px;
@@ -151,12 +152,12 @@
         }
 
         .top-btn-accent {
-            background: #1a85ab;
-            border-color: #2aa3ce;
+            background: linear-gradient(135deg, #541116 0%, #7a1c24 100%);
+            border-color: #d4af37;
         }
 
         .top-btn-accent:hover {
-            background: #157294;
+            background: #68181f;
         }
 
         .top-btn-logout {
@@ -220,7 +221,8 @@
         /* Expandable Admin Panels (Password & User Management) */
         .drawer-card {
             background: var(--card);
-            border: 1px solid #bae6fd;
+            border: 1px solid #c9a227;
+            border-top: 3px solid #c9a227;
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-md);
             padding: 24px 26px;
@@ -284,17 +286,17 @@
         .module-card:hover {
             transform: translateY(-3px);
             box-shadow: var(--shadow-md);
-            border-color: #93c5fd;
+            border-color: #c9a227;
         }
 
         .module-card-featured {
-            background: linear-gradient(135deg, #123b54 0%, #126482 100%);
-            border-color: #126482;
+            background: linear-gradient(135deg, #420c10 0%, #68181f 100%); border: 1px solid rgba(212, 175, 55, 0.45);
+            border-color: rgba(212, 175, 55, 0.55);
             color: #ffffff;
         }
 
         .module-card-featured:hover {
-            border-color: #38bdf8;
+            border-color: #e6c65a;
         }
 
         .module-icon {
@@ -337,7 +339,7 @@
         }
 
         .module-card-featured .module-desc {
-            color: #cfe8f3;
+            color: #f3e5c8;
         }
 
         .module-arrow {
@@ -492,7 +494,7 @@
         input:focus,
         select:focus {
             border-color: var(--teal);
-            box-shadow: 0 0 0 3px rgba(18, 100, 130, 0.14);
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.25);
         }
 
         /* Buttons */
@@ -681,7 +683,7 @@
 
         td {
             padding: 14px 18px;
-            border-bottom: 1px solid #eef2f6;
+            border-bottom: 1px solid #ede4e0;
             font-size: 0.88rem;
             vertical-align: middle;
             color: var(--ink);
@@ -692,7 +694,7 @@
         }
 
         tbody tr:hover {
-            background: #fafcfd;
+            background: #f6ece8;
         }
 
         .id-badge {
@@ -784,7 +786,7 @@
         }
 
         .doc-link:hover {
-            background: #d2ebf3;
+            background: #eddcb8;
         }
 
         .applicant-name {
@@ -814,6 +816,23 @@
             padding: 34px 20px;
             color: var(--muted);
             font-size: 0.9rem;
+        }
+    
+        /* Dark Crimson + Gold Card Accents */
+        .module-card, .kpi-card, .form-card, .section-card {
+            border-top: 3px solid #c9a227;
+        }
+        .module-card-featured {
+            border-top: 3px solid #e6c65a !important;
+        }
+        .btn-primary, .filter-tab.active {
+            background: linear-gradient(135deg, #420c10 0%, #68181f 100%) !important;
+            border: 1px solid rgba(212, 175, 55, 0.55) !important;
+            color: #fffdf9 !important;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #541015 0%, #7d1d26 100%) !important;
+            border-color: #e6c65a !important;
         }
     </style>
 </head>

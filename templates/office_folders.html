@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Document Folders — Enasia Transport Database</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='office_db/styles.css') }}?v=20261123darkcrimson2">
+        <style>
+      .folders-layout {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      @media (max-width: 980px) {
+        .folders-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+      .folder-list {
+        display: grid;
+        gap: 8px;
+        max-height: calc(100vh - 340px);
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+      .folder-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border: 1px solid #dfd3cf;
+        border-radius: 10px;
+        background: #faf8f7;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, transform 0.12s;
+      }
+      .folder-item:hover {
+        background: #f5ebe8;
+        border-color: #c9a227;
+      }
+      .folder-item.selected {
+        background: linear-gradient(135deg, #f3e2e3 0%, #f7efda 100%);
+        border-color: #68181f;
+        box-shadow: inset 4px 0 0 #c9a227, 0 2px 8px rgba(74, 14, 18, 0.10);
+      }
+      .folder-item-left {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        min-width: 0;
+      }
+      .folder-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+        background: #f5ebd6;
+        border: 1px solid rgba(201, 162, 39, 0.45);
+        color: #541116;
+        display: grid;
+        place-items: center;
+        font-size: 19px;
+        flex-shrink: 0;
+      }
+      .folder-item.selected .folder-icon {
+        background: linear-gradient(135deg, #420c10 0%, #68181f 100%);
+        border-color: #c9a227;
+        color: #f7efda;
+      }
+      .folder-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #2d090c;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .folder-meta {
+        font-size: 11px;
+        color: #755e5e;
+        display: block;
+        margin-top: 2px;
+      }
+      .folder-count-badge {
+        background: #f5ebd6;
+        color: #541116;
+        border: 1px solid rgba(201, 162, 39, 0.45);
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .folder-head-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 14px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid #e6dbd7;
+        margin-bottom: 18px;
+      }
+      .folder-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .doc-grid-list {
+        display: grid;
+        gap: 10px;
+      }
+      .doc-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+        padding: 13px 16px;
+        border: 1px solid #e2d6d2;
+        border-radius: 10px;
+        background: #fdfbfa;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .doc-row:hover {
+        border-color: #c9a227;
+        box-shadow: 0 3px 10px rgba(66, 12, 16, 0.07);
+      }
+      .doc-row-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        flex: 1;
+      }
+      .doc-badge-ext {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: #f5ebd6;
+        border: 1px solid rgba(201, 162, 39, 0.45);
+        color: #541116;
+        font-size: 11px;
+        font-weight: 800;
+        display: grid;
+        place-items: center;
+        text-transform: uppercase;
+        flex-shrink: 0;
+      }
+      .doc-badge-ext.pdf {
+        background: #f5e4e5;
+        border-color: rgba(104, 24, 31, 0.25);
+        color: #541116;
+      }
+      .doc-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #2d090c;
+        display: block;
+      }
+      .doc-sub {
+        font-size: 12px;
+        color: #755e5e;
+        display: block;
+        margin-top: 2px;
+      }
+    </style>
+    <script defer src="{{ url_for('static', filename='office_db/folders.js') }}?v=20261123darkcrimson2"></script>
+  </head>
+  <body data-api-base="{{ url_for('office_db.index').rstrip('/') }}" data-logo-url="{{ url_for('static', filename='office_db/enasia-logo.jpg') }}?v=2">
+    <header class="topbar">
+      <div class="brand">
+        <img id="brand-logo" class="brand-logo" src="{{ url_for('static', filename='office_db/enasia-logo.jpg') }}?v=2" alt="Enasia Transport logo" draggable="false">
+        <div>
+          <p class="eyebrow">SHARED DOCUMENT FOLDERS</p>
+          <h1>Enasia Transport — Batch &amp; Office Documents</h1>
+        </div>
+      </div>
+      <div class="account-bar">
+        <span id="signed-in-user"></span>
+        <a href="{{ url_for('office_db.index', auto=1) }}" class="button button-secondary" style="text-decoration: none; display: inline-flex; align-items: center;">← Member Directory</a>
+      </div>
+    </header>
+
+    <main>
+      <div class="toolbar">
+        <div>
+          <p class="eyebrow">SPACE-SAVING BATCH &amp; FOLDER STORAGE</p>
+          <h2>Document folders</h2>
+        </div>
+        <div class="toolbar-actions">
+          <button id="new-folder-button" class="button button-primary">+ New folder</button>
+        </div>
+      </div>
+
+      <div class="folders-layout">
+        <!-- Left Sidebar: Folders -->
+        <section class="card" style="min-height: 540px;">
+          <label class="search-label">Search folders
+            <input id="folder-search" type="search" placeholder="e.g. Batch 1, Batch 2, LTFRB...">
+          </label>
+          <p id="folder-count" class="muted" style="margin: 0 0 12px;"></p>
+          <div id="folder-list" class="folder-list"></div>
+        </section>
+
+        <!-- Right Panel: Selected Folder Documents -->
+        <section id="folder-detail-panel" class="card" style="min-height: 540px;">
+          <div class="empty-state">
+            <span class="empty-icon">📁</span>
+            <h3>Select or create a folder</h3>
+            <p>Create folders like <strong>Batch 1</strong>, <strong>Batch 2</strong>, <strong>Batch 3</strong> and upload shared documents once to save database space.</p>
+          </div>
+        </section>
+      </div>
+      <p id="notice" class="notice hidden" role="status"></p>
+    </main>
+
+    <!-- Create / Rename Folder Modal -->
+    <dialog id="folder-dialog" class="modal" style="max-width: 500px;">
+      <form id="folder-form" class="modal-form stack">
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">DOCUMENT FOLDER</p>
+            <h2 id="folder-form-title">Create new folder</h2>
+          </div>
+          <button type="button" class="icon-button" data-close="folder-dialog" aria-label="Close">×</button>
+        </div>
+        <input id="folder-id" type="hidden">
+        <label>Folder name *
+          <input id="folder-name-input" name="name" required maxlength="150" placeholder="For example: Batch 1, Batch 2, Batch 3">
+        </label>
+        <label>Description / notes (optional)
+          <input id="folder-desc-input" name="description" maxlength="500" placeholder="Optional description for this folder">
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="button button-quiet" data-close="folder-dialog">Cancel</button>
+          <button id="folder-submit-button" class="button button-primary">Save folder</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Upload Multiple Documents into Folder Modal -->
+    <dialog id="folder-upload-dialog" class="modal">
+      <form id="folder-upload-form" class="modal-form stack">
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">UPLOAD TO FOLDER</p>
+            <h2 id="folder-upload-title">Upload documents</h2>
+          </div>
+          <button type="button" class="icon-button" data-close="folder-upload-dialog" aria-label="Close">×</button>
+        </div>
+        <input id="folder-upload-folder-id" type="hidden">
+        <label>Select one or multiple files (PDF, JPG, PNG — use Ctrl+Click or Shift+Click for multiple)
+          <input id="folder-upload-files" name="files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required>
+        </label>
+        <p class="muted" style="margin: 0;">You can customize the title/label and notes for each selected file below before uploading.</p>
+        <div id="folder-upload-preview-list" class="payment-list" style="max-height: 45vh; overflow-y: auto;"></div>
+        <div class="modal-actions">
+          <button type="button" class="button button-quiet" data-close="folder-upload-dialog">Cancel</button>
+          <button id="folder-upload-submit-button" class="button button-primary">Upload all files</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Rename / Edit Document Details Modal -->
+    <dialog id="folder-doc-edit-dialog" class="modal" style="max-width: 500px;">
+      <form id="folder-doc-edit-form" class="modal-form stack">
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">DOCUMENT DETAILS</p>
+            <h2>Rename or edit document</h2>
+          </div>
+          <button type="button" class="icon-button" data-close="folder-doc-edit-dialog" aria-label="Close">×</button>
+        </div>
+        <input id="folder-doc-edit-id" type="hidden">
+        <label>Document title / name *
+          <input id="folder-doc-edit-title" name="title" required maxlength="200">
+        </label>
+        <label>Notes (optional)
+          <input id="folder-doc-edit-notes" name="notes" maxlength="500">
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="button button-quiet" data-close="folder-doc-edit-dialog">Cancel</button>
+          <button class="button button-primary">Save changes</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

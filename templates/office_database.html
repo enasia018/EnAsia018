@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enasia Transport Member Database</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='office_db/styles.css') }}?v=20261122">
-    <script defer src="{{ url_for('static', filename='office_db/renderer.js') }}?v=20261122"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='office_db/styles.css') }}?v=20261123darkcrimson2">
+    <script defer src="{{ url_for('static', filename='office_db/renderer.js') }}?v=20261123darkcrimson2"></script>
   </head>
   <body data-api-base="{{ url_for('office_db.index').rstrip('/') }}" data-logo-url="{{ url_for('static', filename='office_db/enasia-logo.jpg') }}?v=2" data-admin-url="{{ url_for('admin_dashboard') }}">
     <header class="topbar">
@@ -50,6 +50,7 @@
           </div>
           <div class="toolbar-actions">
             <button id="manage-users-button" class="button button-secondary hidden">Manage users</button>
+            <a id="folders-button" href="{{ url_for('office_db.folders_page', auto=1) }}" target="_blank" class="button button-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">📁 Documents ↗</a>
             <button id="export-button" class="button button-secondary">Export Excel</button>
             <button id="import-button" class="button button-secondary">Import Excel</button>
             <input id="import-file" class="hidden" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
