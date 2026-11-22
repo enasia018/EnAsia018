@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enasia Transport Member Database</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='office_db/styles.css') }}">
-    <script defer src="{{ url_for('static', filename='office_db/renderer.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='office_db/styles.css') }}?v=20261122">
+    <script defer src="{{ url_for('static', filename='office_db/renderer.js') }}?v=20261122"></script>
   </head>
   <body data-api-base="{{ url_for('office_db.index').rstrip('/') }}" data-logo-url="{{ url_for('static', filename='office_db/enasia-logo.jpg') }}?v=2" data-admin-url="{{ url_for('admin_dashboard') }}">
     <header class="topbar">
