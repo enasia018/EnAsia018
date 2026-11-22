@@ -1,5 +1,8 @@
 const $ = (selector) => document.querySelector(selector);
 const tokenStorageKey = "enasia-office-db-session-token";
+if (sessionStorage.getItem(tokenStorageKey) && !localStorage.getItem(tokenStorageKey)) {
+  localStorage.setItem(tokenStorageKey, sessionStorage.getItem(tokenStorageKey));
+}
 const apiBase = (document.body.dataset.apiBase || "/admin/database").replace(/\/$/, "");
 const logoUrl = document.body.dataset.logoUrl || "/static/office_db/enasia-logo.jpg?v=2";
 const enasia = createBrowserApi();
@@ -27,7 +30,7 @@ function createBrowserApi() {
 
   async function request(path, { method = "GET", body, responseType = "json" } = {}) {
     const headers = {};
-    const token = sessionStorage.getItem(tokenStorageKey);
+    const token = localStorage.getItem(tokenStorageKey) || sessionStorage.getItem(tokenStorageKey);
     if (token) headers.Authorization = `Bearer ${token}`;
     if (body !== undefined) headers["Content-Type"] = "application/json";
     const response = await fetch(`${apiBase}${path}`, {
@@ -111,24 +114,24 @@ function createBrowserApi() {
       return { ...status, connected: true, url: location.origin };
     },
     async adminResume() {
-      sessionStorage.removeItem(tokenStorageKey);
+      localStorage.removeItem(tokenStorageKey); sessionStorage.removeItem(tokenStorageKey);
       return request("/api/admin-resume", { method: "POST", body: {} });
     },
     async setup(credentials) {
       const result = await request("/api/setup", { method: "POST", body: credentials });
-      sessionStorage.setItem(tokenStorageKey, result.token);
+      localStorage.setItem(tokenStorageKey, result.token); sessionStorage.setItem(tokenStorageKey, result.token);
       return result;
     },
     async login(credentials) {
       const result = await request("/api/login", { method: "POST", body: credentials });
-      sessionStorage.setItem(tokenStorageKey, result.token);
+      localStorage.setItem(tokenStorageKey, result.token); sessionStorage.setItem(tokenStorageKey, result.token);
       return result;
     },
     async logout() {
       try {
         await request("/api/logout", { method: "POST", body: {} });
       } finally {
-        sessionStorage.removeItem(tokenStorageKey);
+        localStorage.removeItem(tokenStorageKey); sessionStorage.removeItem(tokenStorageKey);
       }
     },
     listUsers: () => request("/api/users"),
@@ -329,7 +332,7 @@ function renderDetail(result) {
       `).join("") : '<p class="muted">No monthly dues status recorded.</p>'}</div>
     </section>
     <section class="detail-section">
-      <div class="section-head"><h3>Documents</h3>${canEdit ? '<div class="section-head-actions"><button id="upload-pa-button" class="button button-secondary small-button">+ Upload PA</button><button id="upload-cpc-button" class="button button-secondary small-button">+ Upload CPC</button><button id="upload-or-button" class="button button-secondary small-button">+ Upload OR</button><button id="upload-cr-button" class="button button-secondary small-button">+ Upload CR</button><button id="upload-document-button" class="button button-secondary small-button">+ Upload document</button><button id="upload-multiple-documents-button" class="button button-primary small-button">+ Upload multiple documents</button></div>' : ""}</div>
+      <div class="section-head"><h3>Documents</h3><div class="section-head-actions">${canEdit ? '<button id="upload-pa-button" class="button button-secondary small-button">+ Upload PA</button><button id="upload-cpc-button" class="button button-secondary small-button">+ Upload CPC</button><button id="upload-or-button" class="button button-secondary small-button">+ Upload OR</button><button id="upload-cr-button" class="button button-secondary small-button">+ Upload CR</button><button id="upload-document-button" class="button button-secondary small-button">+ Upload document</button>' : ""}<a id="go-to-documents-button" href="${apiBase}/folders?auto=1${member.batch_number ? `&batch=${encodeURIComponent(member.batch_number)}` : ""}" target="_blank" class="button button-primary small-button" style="text-decoration: none; display: inline-flex; align-items: center;">Go to Documents</a></div></div>
       <div class="document-list">${documents.length ? documents.map((document) => `
         <div class="record"><div><strong>${text(document.document_type)}</strong><small>${text(document.original_filename)}${document.expiry_date ? ` · Expires ${text(document.expiry_date)}` : ""}${document.uploaded ? "" : " · File not uploaded"}</small></div><div class="document-actions">${document.uploaded ? `<button class="button button-secondary small-button" data-document-id="${text(document.id)}">Open</button>` : canEdit ? `<button class="button button-secondary small-button" data-upload-document-id="${text(document.id)}">Attach file</button>` : ""}${canEdit ? `<button class="button button-secondary small-button" data-edit-document-id="${text(document.id)}">Edit</button>${document.uploaded ? `<button class="button button-secondary small-button" data-replace-document-id="${text(document.id)}">Replace file</button>` : ""}<button class="button button-remove small-button" data-delete-document-id="${text(document.id)}">Remove</button>` : ""}</div></div>
       `).join("") : '<p class="muted">No documents uploaded.</p>'}</div>
@@ -339,7 +342,6 @@ function renderDetail(result) {
     $("#add-payment-button").addEventListener("click", () => openPaymentForm(member.id));
     $("#add-dues-button").addEventListener("click", () => openDuesForm(member.id));
     $("#upload-document-button").addEventListener("click", () => openDocumentUploadForm(member.id));
-    $("#upload-multiple-documents-button").addEventListener("click", () => openMultipleDocumentsUploadForm(member.id));
     $("#upload-pa-button").addEventListener("click", () => openDocumentUploadForm(member.id, { document_type: "PA" }));
     $("#upload-cpc-button").addEventListener("click", () => openDocumentUploadForm(member.id, { document_type: "CPC" }));
     $("#upload-or-button").addEventListener("click", () => openDocumentUploadForm(member.id, { document_type: "OR" }));
