@@ -1,3 +1,4 @@
+import zipfile
 import base64
 import hashlib
 import json
@@ -1429,6 +1430,11 @@ def api_login():
 
     _login_attempts.pop(remote_addr, None)
     token = _create_token_session(user.id)
+    session["logged_in"] = True
+    session["admin_user_id"] = user.id
+    session["admin_username"] = user.username
+    session["admin_role"] = user.role
+    session.pop("office_db_signed_out", None)
     return _json_response(
         {"token": token, "username": user.username, "role": user.role}, 200
     )
@@ -2084,6 +2090,343 @@ def api_import():
     )
 
 
+
+
+def _natural_sort_key(text_val):
+    norm = re.sub(r"^bacth\b", "batch", (text_val or "").strip(), flags=re.IGNORECASE)
+    return [
+        (0, int(tok)) if tok.isdigit() else (1, tok.lower())
+        for tok in re.split(r"(\d+)", norm)
+        if tok
+    ]
+
+
+@office_db_bp.route("/folders")
+def folders_page():
+    if request.args.get("auto") == "1" and session.get("logged_in"):
+        session.pop("office_db_signed_out", None)
+    resp = current_app.make_response(render_template("office_folders.html"))
+    resp.headers["Cache-Control"] = "no-store"
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    return resp
+
+
+@office_db_bp.route("/api/folders", methods=["GET", "POST"])
+def api_folders():
+    OfficeFolder = _models["OfficeFolder"]
+    OfficeFolderDocument = _models["OfficeFolderDocument"]
+    _require_auth(require_write=(request.method != "GET"))
+
+    if request.method == "GET":
+        folders = OfficeFolder.query.all()
+        stats_rows = (
+            _db.session.query(
+                OfficeFolderDocument.folder_id,
+                func.count(OfficeFolderDocument.id),
+                func.coalesce(func.sum(OfficeFolderDocument.size_bytes), 0),
+            )
+            .group_by(OfficeFolderDocument.folder_id)
+            .all()
+        )
+        stats_map = {
+            f_id: (int(cnt or 0), int(total_b or 0))
+            for f_id, cnt, total_b in stats_rows
+        }
+        folders_sorted = sorted(folders, key=lambda f: _natural_sort_key(f.name))
+        return _json_response(
+            {
+                "folders": [
+                    {
+                        "id": f.id,
+                        "name": f.name,
+                        "description": f.description,
+                        "document_count": stats_map.get(f.id, (0, 0))[0],
+                        "total_bytes": stats_map.get(f.id, (0, 0))[1],
+                        "created_at": f.created_at,
+                        "updated_at": f.updated_at,
+                    }
+                    for f in folders_sorted
+                ]
+            }
+        )
+
+    body = _read_json_body()
+    name = _validate_text(body.get("name", ""), "Folder name", required=True, max_len=150)
+    description = _validate_text(body.get("description", "") or "", "Description", max_len=500)
+
+    if OfficeFolder.query.filter(func.lower(OfficeFolder.name) == name.lower()).first():
+        raise ApiError(f'A folder named "{name}" already exists.', 409)
+
+    folder_id = str(uuid.uuid4())
+    ts = _now_iso()
+    folder = OfficeFolder(
+        id=folder_id,
+        name=name,
+        description=description,
+        created_at=ts,
+        updated_at=ts,
+    )
+    _db.session.add(folder)
+    _db.session.commit()
+    return _json_response({"id": folder_id, "name": name, "description": description}, 201)
+
+
+@office_db_bp.route("/api/folders/<folder_id>", methods=["GET", "PUT", "DELETE"])
+def api_folder_item(folder_id):
+    OfficeFolder = _models["OfficeFolder"]
+    OfficeFolderDocument = _models["OfficeFolderDocument"]
+    _require_auth(require_write=(request.method != "GET"))
+    if not UUID_RE.match(folder_id):
+        raise ApiError("Folder not found.", 404)
+
+    folder = _db.session.get(OfficeFolder, folder_id)
+    if not folder:
+        raise ApiError("Folder not found.", 404)
+
+    if request.method == "GET":
+        docs = (
+            OfficeFolderDocument.query.filter_by(folder_id=folder.id)
+            .order_by(OfficeFolderDocument.created_at.desc())
+            .all()
+        )
+        total_bytes = sum(int(d.size_bytes or 0) for d in docs)
+        return _json_response(
+            {
+                "folder": {
+                    "id": folder.id,
+                    "name": folder.name,
+                    "description": folder.description,
+                    "document_count": len(docs),
+                    "total_bytes": total_bytes,
+                    "created_at": folder.created_at,
+                    "updated_at": folder.updated_at,
+                },
+                "documents": [
+                    {
+                        "id": d.id,
+                        "folder_id": d.folder_id,
+                        "title": d.title,
+                        "original_filename": d.original_filename,
+                        "mime_type": d.mime_type,
+                        "size_bytes": d.size_bytes,
+                        "notes": d.notes,
+                        "created_at": d.created_at,
+                    }
+                    for d in docs
+                ],
+            }
+        )
+
+    if request.method == "DELETE":
+        OfficeFolderDocument.query.filter_by(folder_id=folder.id).delete()
+        _db.session.delete(folder)
+        _db.session.commit()
+        return _json_response({"success": True})
+
+    body = _read_json_body()
+    name = _validate_text(body.get("name", ""), "Folder name", required=True, max_len=150)
+    description = _validate_text(body.get("description", "") or "", "Description", max_len=500)
+    conflict = OfficeFolder.query.filter(
+        func.lower(OfficeFolder.name) == name.lower(),
+        OfficeFolder.id != folder.id,
+    ).first()
+    if conflict:
+        raise ApiError(f'A folder named "{name}" already exists.', 409)
+
+    folder.name = name
+    folder.description = description
+    folder.updated_at = _now_iso()
+    _db.session.commit()
+    return _json_response({"id": folder.id, "name": folder.name, "description": folder.description})
+
+
+def _build_verified_folder_document(folder_id, item):
+    OfficeFolderDocument = _models["OfficeFolderDocument"]
+    raw_filename = _validate_text(
+        item.get("filename", ""), "File name", required=True, max_len=255
+    )
+    filename = re.sub(r"[\x00-\x1f]", "_", os.path.basename(raw_filename))
+    default_title = os.path.splitext(filename)[0][:200] or filename
+    title = _validate_text(
+        item.get("title") or default_title,
+        "Document title",
+        required=True,
+        max_len=200,
+    )
+    notes = _validate_text(item.get("notes") or "", "Notes", max_len=500)
+    mime_type = _validate_text(
+        item.get("mime_type", ""), "File type", required=True, max_len=120
+    )
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in {".pdf", ".jpg", ".jpeg", ".png"}:
+        raise ApiError(f'"{filename}": Upload PDF, JPG, or PNG documents only.', 400)
+    if mime_type not in {"application/pdf", "image/jpeg", "image/png"}:
+        raise ApiError(
+            f'"{filename}": File content type does not match an allowed PDF, JPG, or PNG document.',
+            400,
+        )
+
+    b64_content = item.get("content_base64")
+    if not isinstance(b64_content, str) or not BASE64_RE.match(b64_content):
+        raise ApiError(f'"{filename}": Document file content is invalid.', 400)
+    try:
+        content = base64.b64decode(b64_content, validate=True)
+    except Exception:
+        raise ApiError(f'"{filename}": Document file content is invalid.', 400)
+
+    if not content or len(content) > MAX_UPLOAD_BYTES:
+        raise ApiError(
+            f'"{filename}": Documents must be between 1 byte and 20 MB.', 400
+        )
+
+    sig_ok = (
+        (ext == ".pdf" and content[:5] == b"%PDF-")
+        or (ext in (".jpg", ".jpeg") and content[:3] == b"\xff\xd8\xff")
+        or (ext == ".png" and content[:8] == b"\x89PNG\r\n\x1a\n")
+    )
+    if not sig_ok:
+        raise ApiError(
+            f'"{filename}": The uploaded file content does not match its file type.',
+            400,
+        )
+
+    return OfficeFolderDocument(
+        id=str(uuid.uuid4()),
+        folder_id=folder_id,
+        title=title,
+        original_filename=filename,
+        file_data=content,
+        mime_type=mime_type,
+        size_bytes=len(content),
+        notes=notes,
+        created_at=_now_iso(),
+    )
+
+
+@office_db_bp.route("/api/folders/<folder_id>/documents", methods=["POST"])
+def api_folder_documents_upload(folder_id):
+    OfficeFolder = _models["OfficeFolder"]
+    _require_auth(require_write=True)
+    if not UUID_RE.match(folder_id):
+        raise ApiError("Folder not found.", 404)
+    folder = _db.session.get(OfficeFolder, folder_id)
+    if not folder:
+        raise ApiError("Folder not found.", 404)
+
+    body = _read_json_body()
+    if isinstance(body.get("documents"), list):
+        items = body["documents"]
+        if not items:
+            raise ApiError("Choose at least one file to upload.", 400)
+        created_ids = []
+        for item in items:
+            doc = _build_verified_folder_document(folder.id, item)
+            _db.session.add(doc)
+            created_ids.append(doc.id)
+        folder.updated_at = _now_iso()
+        _db.session.commit()
+        return _json_response({"ids": created_ids, "count": len(created_ids)}, 201)
+
+    doc = _build_verified_folder_document(folder.id, body)
+    _db.session.add(doc)
+    folder.updated_at = _now_iso()
+    _db.session.commit()
+    return _json_response({"id": doc.id}, 201)
+
+
+@office_db_bp.route("/api/folder-documents/<doc_id>", methods=["GET", "PUT", "DELETE"])
+def api_folder_document_item(doc_id):
+    OfficeFolderDocument = _models["OfficeFolderDocument"]
+    _require_auth(require_write=(request.method != "GET"))
+    if not UUID_RE.match(doc_id):
+        raise ApiError("Document not found.", 404)
+
+    doc = _db.session.get(OfficeFolderDocument, doc_id)
+    if not doc:
+        raise ApiError("Document not found.", 404)
+
+    if request.method == "PUT":
+        body = _read_json_body()
+        doc.title = _validate_text(
+            body.get("title", "") or "", "Document title", required=True, max_len=200
+        )
+        doc.notes = _validate_text(body.get("notes", "") or "", "Notes", max_len=500)
+        _db.session.commit()
+        return _json_response({"success": True})
+
+    if request.method == "DELETE":
+        _db.session.delete(doc)
+        _db.session.commit()
+        return _json_response({"success": True})
+
+    if not doc.file_data:
+        raise ApiError("Document file content is missing.", 404)
+    encoded_name = quote(doc.original_filename or "folder-document")
+    disp_type = "attachment" if request.args.get("download") == "1" else "inline"
+    return Response(
+        doc.file_data,
+        status=200,
+        headers={
+            "Content-Type": doc.mime_type or "application/octet-stream",
+            "Content-Length": str(len(doc.file_data)),
+            "Content-Disposition": f"{disp_type}; filename*=UTF-8''{encoded_name}",
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@office_db_bp.route("/api/folders/<folder_id>/download", methods=["GET"])
+def api_folder_download_zip(folder_id):
+    OfficeFolder = _models["OfficeFolder"]
+    OfficeFolderDocument = _models["OfficeFolderDocument"]
+    _require_auth(require_write=False)
+    if not UUID_RE.match(folder_id):
+        raise ApiError("Folder not found.", 404)
+    folder = _db.session.get(OfficeFolder, folder_id)
+    if not folder:
+        raise ApiError("Folder not found.", 404)
+
+    docs = (
+        OfficeFolderDocument.query.filter_by(folder_id=folder.id)
+        .order_by(OfficeFolderDocument.created_at)
+        .all()
+    )
+    if not docs:
+        raise ApiError("This folder has no documents to download yet.", 400)
+
+    buf = BytesIO()
+    used_names = {}
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for d in docs:
+            if not d.file_data:
+                continue
+            fname = d.original_filename or f"{d.title}.bin"
+            base, ext = os.path.splitext(fname)
+            key = fname.lower()
+            if key in used_names:
+                used_names[key] += 1
+                fname = f"{base} ({used_names[key]}){ext}"
+            else:
+                used_names[key] = 1
+            zf.writestr(fname, d.file_data)
+
+    zip_bytes = buf.getvalue()
+    safe_folder = re.sub(r"[^A-Za-z0-9._ -]+", "_", folder.name).strip() or "Folder"
+    encoded_zip = quote(f"{safe_folder}-Documents.zip")
+    return Response(
+        zip_bytes,
+        status=200,
+        headers={
+            "Content-Type": "application/zip",
+            "Content-Length": str(len(zip_bytes)),
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_zip}",
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
 def _seed_office_db_if_empty(app):
     OfficeMember = _models["OfficeMember"]
     OfficePayment = _models["OfficePayment"]
@@ -2325,6 +2668,31 @@ def init_office_db(app, db, portal_member_model=None):
             payment_count = db.Column(db.Integer, nullable=False)
             dues_count = db.Column(db.Integer, nullable=False)
 
+        class OfficeFolder(db.Model):
+            __tablename__ = "office_folders"
+            id = db.Column(db.String(36), primary_key=True)
+            name = db.Column(db.String(150), unique=True, nullable=False, index=True)
+            description = db.Column(db.String(500), nullable=False, default="")
+            created_at = db.Column(db.String(40), nullable=False)
+            updated_at = db.Column(db.String(40), nullable=False)
+
+        class OfficeFolderDocument(db.Model):
+            __tablename__ = "office_folder_documents"
+            id = db.Column(db.String(36), primary_key=True)
+            folder_id = db.Column(
+                db.String(36),
+                db.ForeignKey("office_folders.id", ondelete="CASCADE"),
+                nullable=False,
+                index=True,
+            )
+            title = db.Column(db.String(200), nullable=False)
+            original_filename = db.Column(db.String(255), nullable=False)
+            file_data = db.Column(db.LargeBinary, nullable=False)
+            mime_type = db.Column(db.String(120), nullable=False, default="")
+            size_bytes = db.Column(db.Integer, nullable=False, default=0)
+            notes = db.Column(db.String(500), nullable=False, default="")
+            created_at = db.Column(db.String(40), nullable=False)
+
         _models.update(
             {
                 "OfficeUser": OfficeUser,
@@ -2334,6 +2702,8 @@ def init_office_db(app, db, portal_member_model=None):
                 "OfficeMonthlyDue": OfficeMonthlyDue,
                 "OfficeDocument": OfficeDocument,
                 "OfficeImportBatch": OfficeImportBatch,
+                "OfficeFolder": OfficeFolder,
+                "OfficeFolderDocument": OfficeFolderDocument,
             }
         )
 
