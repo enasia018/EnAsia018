@@ -329,7 +329,7 @@ function renderDetail(result) {
       `).join("") : '<p class="muted">No monthly dues status recorded.</p>'}</div>
     </section>
     <section class="detail-section">
-      <div class="section-head"><h3>Documents</h3>${canEdit ? '<div class="section-head-actions"><button id="upload-pa-button" class="button button-secondary small-button">+ Upload PA</button><button id="upload-cpc-button" class="button button-secondary small-button">+ Upload CPC</button><button id="upload-or-button" class="button button-secondary small-button">+ Upload OR</button><button id="upload-cr-button" class="button button-secondary small-button">+ Upload CR</button><button id="upload-document-button" class="button button-secondary small-button">+ Upload document</button></div>' : ""}</div>
+      <div class="section-head"><h3>Documents</h3>${canEdit ? '<div class="section-head-actions"><button id="upload-pa-button" class="button button-secondary small-button">+ Upload PA</button><button id="upload-cpc-button" class="button button-secondary small-button">+ Upload CPC</button><button id="upload-or-button" class="button button-secondary small-button">+ Upload OR</button><button id="upload-cr-button" class="button button-secondary small-button">+ Upload CR</button><button id="upload-document-button" class="button button-secondary small-button">+ Upload document</button><button id="upload-multiple-documents-button" class="button button-primary small-button">+ Upload multiple documents</button></div>' : ""}</div>
       <div class="document-list">${documents.length ? documents.map((document) => `
         <div class="record"><div><strong>${text(document.document_type)}</strong><small>${text(document.original_filename)}${document.expiry_date ? ` · Expires ${text(document.expiry_date)}` : ""}${document.uploaded ? "" : " · File not uploaded"}</small></div><div class="document-actions">${document.uploaded ? `<button class="button button-secondary small-button" data-document-id="${text(document.id)}">Open</button>` : canEdit ? `<button class="button button-secondary small-button" data-upload-document-id="${text(document.id)}">Attach file</button>` : ""}${canEdit ? `<button class="button button-secondary small-button" data-edit-document-id="${text(document.id)}">Edit</button>${document.uploaded ? `<button class="button button-secondary small-button" data-replace-document-id="${text(document.id)}">Replace file</button>` : ""}<button class="button button-remove small-button" data-delete-document-id="${text(document.id)}">Remove</button>` : ""}</div></div>
       `).join("") : '<p class="muted">No documents uploaded.</p>'}</div>
@@ -339,6 +339,7 @@ function renderDetail(result) {
     $("#add-payment-button").addEventListener("click", () => openPaymentForm(member.id));
     $("#add-dues-button").addEventListener("click", () => openDuesForm(member.id));
     $("#upload-document-button").addEventListener("click", () => openDocumentUploadForm(member.id));
+    $("#upload-multiple-documents-button").addEventListener("click", () => openMultipleDocumentsUploadForm(member.id));
     $("#upload-pa-button").addEventListener("click", () => openDocumentUploadForm(member.id, { document_type: "PA" }));
     $("#upload-cpc-button").addEventListener("click", () => openDocumentUploadForm(member.id, { document_type: "CPC" }));
     $("#upload-or-button").addEventListener("click", () => openDocumentUploadForm(member.id, { document_type: "OR" }));
@@ -557,6 +558,55 @@ function updateDocumentUploadDateFields() {
   }
 }
 
+function inferDocumentTypeFromFilename(fileName) {
+  const base = String(fileName || "").replace(/\.[^.]+$/, "").trim();
+  if (/(?:^|[\s_-])PA(?:$|[\s_-])/i.test(base)) return "PA";
+  if (/(?:^|[\s_-])CPC(?:$|[\s_-])/i.test(base)) return "CPC";
+  if (/(?:^|[\s_-])OR(?:$|[\s_-])/i.test(base)) return "OR";
+  if (/(?:^|[\s_-])CR(?:$|[\s_-])/i.test(base)) return "CR";
+  if (/license/i.test(base)) return "Driver License";
+  if (/(?:^|[\s_-])MOA(?:$|[\s_-])/i.test(base)) return "MOA";
+  return base.slice(0, 100) || "Document";
+}
+
+function renderMultipleDocumentsPreview() {
+  const files = Array.from($("#multiple-documents-files").files || []);
+  const list = $("#multiple-documents-list");
+  if (!files.length) {
+    list.innerHTML = '<p class="muted">No files selected yet. Choose one or more PDF, JPG, or PNG files above.</p>';
+    return;
+  }
+  list.innerHTML = files.map((file, idx) => {
+    const inferred = inferDocumentTypeFromFilename(file.name);
+    const sizeKb = Math.max(1, Math.round(file.size / 1024));
+    return `
+      <div class="record" data-multi-doc-index="${idx}" style="display: grid; grid-template-columns: 1.2fr 1fr 0.85fr 0.85fr; gap: 10px; align-items: end;">
+        <div>
+          <strong>${text(file.name)}</strong>
+          <small>${sizeKb.toLocaleString()} KB</small>
+        </div>
+        <label style="font-size: 11px;">Document type *
+          <input type="text" class="multi-doc-type" value="${text(inferred)}" required maxlength="100" placeholder="PA, CPC, OR, CR, etc.">
+        </label>
+        <label style="font-size: 11px;">Issue date
+          <input type="date" class="multi-doc-issue">
+        </label>
+        <label style="font-size: 11px;">Expiry date
+          <input type="date" class="multi-doc-expiry">
+        </label>
+      </div>
+    `;
+  }).join("");
+}
+
+function openMultipleDocumentsUploadForm(memberId) {
+  const form = $("#multiple-documents-upload-form");
+  form.reset();
+  $("#multiple-documents-member-id").value = memberId;
+  renderMultipleDocumentsPreview();
+  $("#multiple-documents-upload-dialog").showModal();
+}
+
 function createImportResult(content) {
   const panel = $("#import-result");
   panel.replaceChildren();
@@ -699,6 +749,59 @@ $("#document-upload-form").addEventListener("submit", async (event) => {
   await selectMember(memberId);
 });
 $("#document-upload-form [name='document_type']").addEventListener("input", updateDocumentUploadDateFields);
+
+$("#multiple-documents-files").addEventListener("change", renderMultipleDocumentsPreview);
+
+$("#multiple-documents-upload-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const memberId = $("#multiple-documents-member-id").value;
+  const files = Array.from($("#multiple-documents-files").files || []);
+  if (!files.length) {
+    showNotice("Choose at least one PDF, JPG, or PNG file to upload.", true);
+    return;
+  }
+  const rows = Array.from($("#multiple-documents-list").querySelectorAll("[data-multi-doc-index]"));
+  const submitBtn = $("#multiple-documents-submit-button");
+  const originalText = submitBtn.textContent;
+  submitBtn.disabled = true;
+
+  let uploadedCount = 0;
+  try {
+    for (let i = 0; i < files.length; i += 1) {
+      const file = files[i];
+      const row = rows[i];
+      const docType = (row?.querySelector(".multi-doc-type")?.value || inferDocumentTypeFromFilename(file.name)).trim() || "Document";
+      const issueDate = row?.querySelector(".multi-doc-issue")?.value || "";
+      const expiryDate = row?.querySelector(".multi-doc-expiry")?.value || "";
+      submitBtn.textContent = `Uploading ${i + 1} of ${files.length}...`;
+      await enasia.uploadDocument(
+        memberId,
+        {
+          document_id: "",
+          document_type: docType,
+          issue_date: issueDate,
+          expiry_date: expiryDate,
+        },
+        file,
+      );
+      uploadedCount += 1;
+    }
+    showNotice(`Uploaded ${uploadedCount} document${uploadedCount === 1 ? "" : "s"}.`);
+    $("#multiple-documents-upload-dialog").close();
+    await selectMember(memberId);
+  } catch (error) {
+    showNotice(
+      uploadedCount > 0
+        ? `Uploaded ${uploadedCount} of ${files.length} documents before error: ${error.message}`
+        : error.message,
+      true,
+    );
+    if (uploadedCount > 0) await selectMember(memberId);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
+  }
+});
 
 $("#import-button").addEventListener("click", async () => {
   const preview = await run(() => enasia.previewImport());
