@@ -176,6 +176,28 @@
       </form>
     </dialog>
 
+    <dialog id="multiple-documents-upload-dialog" class="modal">
+      <form id="multiple-documents-upload-form" class="modal-form stack">
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">BATCH DOCUMENT UPLOAD</p>
+            <h2>Upload multiple documents</h2>
+          </div>
+          <button type="button" class="icon-button" data-close="multiple-documents-upload-dialog" aria-label="Close">×</button>
+        </div>
+        <input id="multiple-documents-member-id" type="hidden">
+        <label>Select multiple PDF, JPG, or PNG files (Ctrl+Click or Shift+Click to pick several files)
+          <input id="multiple-documents-files" name="files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required>
+        </label>
+        <p class="muted" style="margin: 0;">Each selected file below can have its own Document Type (auto-detected from the file name, such as PA, CPC, OR, CR, or Driver License) and optional Issue/Expiry dates.</p>
+        <div id="multiple-documents-list" class="payment-list" style="max-height: 45vh; overflow-y: auto;"></div>
+        <div class="modal-actions">
+          <button type="button" class="button button-quiet" data-close="multiple-documents-upload-dialog">Cancel</button>
+          <button id="multiple-documents-submit-button" class="button button-primary">Upload all documents</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="users-dialog" class="modal">
       <div class="modal-form">
         <div class="modal-heading">
