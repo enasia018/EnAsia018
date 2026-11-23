@@ -2733,3 +2733,4 @@ def init_office_db(app, db, portal_member_model=None):
             sync_all_office_members_to_portal()
         except Exception:
             db.session.rollback()
+# Live build: 2026-11-23-dark-crimson-gold-folders
