@@ -1212,10 +1212,18 @@
                             <td><strong>{{ r.vans }}</strong></td>
                             <td>{{ r.destination or 'Not provided' }}</td>
                             <td>
-                                <form action="{{ url_for('update_reservation_schedule', res_id=r.id) }}" method="POST" class="schedule-form">
+                                <form action="{{ url_for('update_reservation_schedule', res_id=r.id) }}" method="POST" class="schedule-form js-res-schedule-form">
                                     <label>
-                                        Date
-                                        <input type="date" name="pickup_date" value="{{ r.pickup_date or '' }}" required>
+                                        Start / Pick-up
+                                        <input type="date" name="pickup_date" class="js-res-start" value="{{ r.pickup_date or '' }}" required>
+                                    </label>
+                                    <label>
+                                        Days
+                                        <input type="number" name="days" class="js-res-days" min="1" max="365" value="{{ r.days or 2 }}" style="width: 66px;" required>
+                                    </label>
+                                    <label>
+                                        End Date
+                                        <input type="date" name="end_date" class="js-res-end" value="">
                                     </label>
                                     <label>
                                         Time
@@ -1230,11 +1238,19 @@
                                 </span>
                             </td>
                             <td>
-                                {% if r.receipt %}
-                                    <a href="{{ url_for('static', filename='uploads/' + r.receipt) }}" target="_blank" class="doc-link">🧾 View Receipt</a>
-                                {% else %}
-                                    <span class="meta-line">None</span>
-                                {% endif %}
+                                <div class="action-stack">
+                                    {% if r.receipt %}
+                                        <a href="{{ url_for('view_reservation_receipt', res_id=r.id) }}" target="_blank" class="doc-link">🧾 View Receipt</a>
+                                    {% else %}
+                                        <span class="meta-line">None</span>
+                                    {% endif %}
+                                    <form action="{{ url_for('admin_upload_receipt', record_type='reservation', record_id=r.id) }}" method="POST" enctype="multipart/form-data" style="display:inline;">
+                                        <label class="doc-link" style="cursor:pointer; background:#f5ebd6; color:#420c10; border:1px solid rgba(201,162,39,0.5);" title="Upload or replace receipt screenshot in NeonDB">
+                                            📤 {{ 'Replace' if r.receipt else 'Attach' }}
+                                            <input type="file" name="receipt" accept="image/*,.pdf" style="display:none;" onchange="if(this.files.length) this.form.submit();">
+                                        </label>
+                                    </form>
+                                </div>
                             </td>
                             <td>
                                 <div class="action-stack">
@@ -1373,11 +1389,19 @@
                                 </span>
                             </td>
                             <td>
-                                {% if tour.receipt %}
-                                    <a href="{{ url_for('static', filename='uploads/' + tour.receipt) }}" target="_blank" class="doc-link">🧾 View Receipt</a>
-                                {% else %}
-                                    <span class="meta-line">No Receipt Yet</span>
-                                {% endif %}
+                                <div class="action-stack">
+                                    {% if tour.receipt %}
+                                        <a href="{{ url_for('view_tour_receipt', app_id=tour.id) }}" target="_blank" class="doc-link">🧾 View Receipt</a>
+                                    {% else %}
+                                        <span class="meta-line">No Receipt Yet</span>
+                                    {% endif %}
+                                    <form action="{{ url_for('admin_upload_receipt', record_type='tour', record_id=tour.id) }}" method="POST" enctype="multipart/form-data" style="display:inline;">
+                                        <label class="doc-link" style="cursor:pointer; background:#f5ebd6; color:#420c10; border:1px solid rgba(201,162,39,0.5);" title="Upload or replace receipt screenshot in NeonDB">
+                                            📤 {{ 'Replace' if tour.receipt else 'Attach' }}
+                                            <input type="file" name="receipt" accept="image/*,.pdf" style="display:none;" onchange="if(this.files.length) this.form.submit();">
+                                        </label>
+                                    </form>
+                                </div>
                             </td>
                             <td>
                                 <a href="{{ url_for('delete_tour', app_id=tour.id) }}" class="btn btn-delete btn-sm" onclick="return confirm('Are you sure you want to delete this tour application?');">Delete</a>
@@ -1419,11 +1443,19 @@
                             <td><strong>{{ payment.full_name }}</strong></td>
                             <td>{{ payment.contact }}</td>
                             <td>
-                                {% if payment.receipt %}
-                                    <a href="{{ url_for('static', filename='uploads/' + payment.receipt) }}" target="_blank" class="doc-link">🧾 View Receipt</a>
-                                {% else %}
-                                    <span class="meta-line">No Receipt</span>
-                                {% endif %}
+                                <div class="action-stack">
+                                    {% if payment.receipt %}
+                                        <a href="{{ url_for('view_gcash_receipt', payment_id=payment.id) }}" target="_blank" class="doc-link">🧾 View Receipt</a>
+                                    {% else %}
+                                        <span class="meta-line">No Receipt</span>
+                                    {% endif %}
+                                    <form action="{{ url_for('admin_upload_receipt', record_type='gcash', record_id=payment.id) }}" method="POST" enctype="multipart/form-data" style="display:inline;">
+                                        <label class="doc-link" style="cursor:pointer; background:#f5ebd6; color:#420c10; border:1px solid rgba(201,162,39,0.5);" title="Upload or replace receipt screenshot in NeonDB">
+                                            📤 {{ 'Replace' if payment.receipt else 'Attach' }}
+                                            <input type="file" name="receipt" accept="image/*,.pdf" style="display:none;" onchange="if(this.files.length) this.form.submit();">
+                                        </label>
+                                    </form>
+                                </div>
                             </td>
                             <td>
                                 <span class="status-badge {{ 'status-approved' if payment.status == 'Approved' else 'status-pending' }}">
@@ -1547,6 +1579,54 @@
                 row.style.display = match ? '' : 'none';
             });
         }
+    
+        // Two-way sync for Reservation List Start Date, Days, and End Date in Admin Dashboard
+        (function() {
+            function addDaysIso(isoDateStr, addDays) {
+                const parts = (isoDateStr || '').split('-').map(Number);
+                if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return '';
+                const dt = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + addDays));
+                return dt.toISOString().slice(0, 10);
+            }
+            function diffDaysInclusive(startIso, endIso) {
+                const s = (startIso || '').split('-').map(Number);
+                const e = (endIso || '').split('-').map(Number);
+                if (s.length !== 3 || e.length !== 3) return null;
+                const dtS = Date.UTC(s[0], s[1] - 1, s[2]);
+                const dtE = Date.UTC(e[0], e[1] - 1, e[2]);
+                const diff = Math.round((dtE - dtS) / 86400000) + 1;
+                return diff >= 1 ? diff : null;
+            }
+            document.querySelectorAll('.js-res-schedule-form').forEach(form => {
+                const startInput = form.querySelector('.js-res-start');
+                const daysInput = form.querySelector('.js-res-days');
+                const endInput = form.querySelector('.js-res-end');
+                if (!startInput || !daysInput || !endInput) return;
+
+                function updateEnd() {
+                    if (!startInput.value) return;
+                    let d = parseInt(daysInput.value || '1', 10);
+                    if (!Number.isInteger(d) || d < 1) d = 1;
+                    endInput.min = startInput.value;
+                    endInput.value = addDaysIso(startInput.value, d - 1);
+                }
+                function updateDays() {
+                    if (!startInput.value || !endInput.value) return;
+                    const d = diffDaysInclusive(startInput.value, endInput.value);
+                    if (d !== null) {
+                        daysInput.value = String(d);
+                    } else {
+                        endInput.value = startInput.value;
+                        daysInput.value = '1';
+                    }
+                }
+                updateEnd();
+                startInput.addEventListener('change', updateEnd);
+                daysInput.addEventListener('input', updateEnd);
+                endInput.addEventListener('change', updateDays);
+            });
+        })();
+
     </script>
 
 </body>

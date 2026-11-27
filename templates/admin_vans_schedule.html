@@ -3,191 +3,633 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Van List & Schedule | EnAsia Admin</title>
+    <title>Van List &amp; Schedule - EnAsia Admin</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #111;
-            color: #fff;
-            padding: 20px;
+        :root {
+            color-scheme: light;
+            --bg: #eae5e3;
+            --card: #faf8f7;
+            --card-alt: #f3ecea;
+            --border: #dfd3cf;
+            --gold: #c9a227;
+            --gold-bright: #e6c65a;
+            --gold-soft: #f5ebd6;
+            --crimson-dark: #32080b;
+            --crimson: #420c10;
+            --crimson-mid: #581318;
+            --crimson-soft: #68181f;
+            --ink: #231717;
+            --muted: #6e5757;
+            --green: #16794c;
+            --green-bg: #e6f6ee;
+            --danger: #9b1c1c;
+            --danger-bg: #fef2f2;
         }
-        h2, h3 {
-            color: #ff3333;
+        * { box-sizing: border-box; }
+        body {
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+        .topbar {
+            background: linear-gradient(135deg, #32080b 0%, #420c10 52%, #68181f 100%);
+            border-bottom: 2px solid var(--gold);
+            color: #ffffff;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 14px;
+            box-shadow: 0 4px 18px rgba(45, 8, 11, 0.22);
+        }
+        .topbar-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .topbar-eyebrow {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--gold-bright);
+            margin: 0;
+        }
+        .topbar h2 {
+            margin: 0;
+            font-size: 1.35rem;
+            color: #fffdf9;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-nav {
+            background: rgba(255, 253, 249, 0.12);
+            color: #fffdf9;
+            padding: 9px 15px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            transition: background 0.15s, transform 0.15s;
+        }
+        .btn-nav:hover {
+            background: rgba(212, 175, 55, 0.24);
+            transform: translateY(-1px);
+        }
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.22);
+            color: #fecaca;
+            padding: 9px 15px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            border: 1px solid rgba(248, 113, 113, 0.45);
+        }
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.38);
+            color: #ffffff;
+        }
+        .page-main {
+            max-width: 1480px;
+            margin: 0 auto;
+            padding: 26px 32px 60px;
+        }
+        .admin-notice {
+            padding: 13px 16px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .admin-notice-success {
+            background: var(--green-bg);
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+        }
+        .admin-notice-error {
+            background: var(--danger-bg);
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+        .admin-notice-info {
+            background: var(--gold-soft);
+            border: 1px solid var(--gold);
+            color: var(--crimson);
+        }
+        .card-panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-top: 3px solid var(--gold);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(66, 12, 16, 0.06);
+        }
+        .card-panel h3 {
+            margin: 0 0 14px 0;
+            color: var(--crimson);
+            font-size: 1.1rem;
+        }
+        .add-van-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+        }
+        .add-van-form label {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--ink);
+            flex: 1;
+            min-width: 190px;
+        }
+        input[type="text"], input[type="date"], input[type="time"], input[type="number"], textarea {
+            padding: 9px 11px;
+            border: 1px solid #d4c3be;
+            border-radius: 7px;
+            background: #fffdfb;
+            color: var(--ink);
+            font: 13.5px "Segoe UI", Arial, sans-serif;
+            outline: none;
+        }
+        input:focus, textarea:focus {
+            border-color: var(--crimson-soft);
+            box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.25);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #420c10 0%, #68181f 100%);
+            color: #fffdf9;
+            border: 1px solid rgba(212, 175, 55, 0.55);
+            padding: 9px 16px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.84rem;
+            transition: background 0.15s, transform 0.15s;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #541015 0%, #7d1d26 100%);
+            border-color: var(--gold-bright);
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #f6f0ec;
+            color: var(--crimson);
+            border: 1px solid #d1bfae;
+            padding: 8px 14px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.82rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-secondary:hover {
+            background: var(--gold-soft);
+            border-color: var(--gold);
+        }
+        .btn-delete {
+            background: #fdf2f2;
+            color: #9b1c1c;
+            border: 1px solid #f8b4b4;
+            padding: 7px 12px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+        .btn-delete:hover {
+            background: #fbd5d5;
+        }
+        .admin-table-wrap {
+            width: 100%;
+            overflow-x: auto;
         }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
-            background: #222;
         }
         th, td {
-            border: 1px solid #444;
-            padding: 10px;
+            padding: 14px 16px;
             text-align: left;
-        }
-        th {
-            background-color: #333;
-            color: #ff3333;
-        }
-        .btn-approve {
-            background-color: #4CAF50;
-            color: white;
-            padding: 5px 10px;
-            text-decoration: none;
-            border-radius: 3px;
-        }
-        .btn-delete {
-            background-color: #ff3333;
-            color: white;
-            padding: 5px 10px;
-            text-decoration: none;
-            border-radius: 3px;
-        }
-        .btn-toggle {
-            background-color: #ff9800;
-            color: white;
-            padding: 5px 10px;
-            text-decoration: none;
-            border-radius: 3px;
-        }
-        .btn-add {
-            background-color: #ff3333;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 3px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .form-box {
-            background: #222;
-            padding: 15px;
-            border: 1px solid #444;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: inline-block;
+            border-bottom: 1px solid #ede4e0;
             vertical-align: top;
         }
-        input[type="text"] {
-            padding: 6px;
-            margin-right: 10px;
-            margin-bottom: 5px;
-            border-radius: 3px;
-            border: none;
+        th {
+            background: var(--card-alt);
+            color: var(--crimson-mid);
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid #d8c39e;
+        }
+        .van-edit-form {
+            display: grid;
+            gap: 8px;
+            max-width: 280px;
+        }
+        .van-edit-form label {
+            display: grid;
+            gap: 3px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: var(--muted);
+        }
+        .van-booking-list {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .van-booking {
+            background: #fdfbfa;
+            border: 1px solid #e2d5d0;
+            border-left: 4px solid var(--crimson-soft);
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: grid;
+            gap: 4px;
+        }
+        .van-booking-manual {
+            background: linear-gradient(135deg, #f7f0e2 0%, #f5e6e7 100%);
+            border: 1px solid rgba(201, 162, 39, 0.55);
+            border-left: 4px solid var(--gold);
+        }
+        .van-booking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .van-booking strong {
+            color: var(--crimson-dark);
+            font-size: 0.9rem;
+        }
+        .van-booking-dates {
+            font-size: 0.83rem;
+            font-weight: 700;
+            color: var(--crimson-mid);
+        }
+        .van-booking-meta {
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+        .badge-days {
+            display: inline-block;
+            background: var(--gold-soft);
+            color: var(--crimson);
+            border: 1px solid rgba(201, 162, 39, 0.5);
+            font-size: 0.73rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+        .badge-status {
+            display: inline-block;
+            font-size: 0.73rem;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 999px;
+        }
+        .badge-available {
+            background: var(--green-bg);
+            color: var(--green);
+            border: 1px solid #a7f3d0;
+        }
+        .badge-unavailable {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid #fecaca;
+        }
+        .van-no-bookings {
+            display: inline-block;
+            color: var(--muted);
+            font-size: 0.84rem;
+            margin-bottom: 8px;
+        }
+        .van-management-panel {
+            margin-top: 10px;
+            border: 1px solid #dfd3cf;
+            border-radius: 10px;
+            background: #f7f2f0;
+            padding: 10px 14px;
+        }
+        .van-management-panel summary {
+            cursor: pointer;
+            font-weight: 750;
+            font-size: 0.85rem;
+            color: var(--crimson);
+            user-select: none;
+        }
+        .van-schedule-form {
+            display: grid;
+            gap: 12px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e2d5d0;
+        }
+        .van-schedule-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+            gap: 10px;
+        }
+        .van-schedule-form label {
+            display: grid;
+            gap: 4px;
+            font-size: 0.77rem;
+            font-weight: 700;
+            color: #3d2425;
+        }
+        .schedule-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
         }
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css', v=14) }}">
 </head>
-<body class="admin-page">
+<body>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
-        <h2 style="margin: 0;">Van List, Availability &amp; Schedule</h2>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="{{ url_for('admin_van_finances') }}" class="btn-add" style="text-decoration: none;">🚐 Van Earnings &amp; Expenses</a>
-            <a href="{{ url_for('admin_dashboard') }}" class="btn-add" style="text-decoration: none;">← Back to Admin Dashboard</a>
+    <header class="topbar">
+        <div class="topbar-title-group">
+            <p class="topbar-eyebrow">EnAsia Transport Fleet Operations</p>
+            <h2>🗓️ Van List &amp; Reservation Schedule</h2>
         </div>
-    </div>
+        <div class="header-actions">
+            <a href="{{ url_for('admin_dashboard') }}" class="btn-nav">← Back to Admin Dashboard</a>
+            <a href="{{ url_for('admin_logout') }}" class="btn-logout">Logout</a>
+        </div>
+    </header>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-            <div class="admin-notice admin-notice-{{ category }}" role="status">{{ message }}</div>
-        {% endfor %}
-    {% endwith %}
+    <main class="page-main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="admin-notice admin-notice-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-    <!-- Form to add a new Van -->
-    <div class="form-box">
-        <h4>Add New Van</h4>
-        <form action="{{ url_for('add_van') }}" method="POST">
-            <input type="text" name="van_name" placeholder="Van Name" required><br>
-            <input type="text" name="plate_number" placeholder="Plate Number"><br>
-            <input type="text" name="driver_name" placeholder="Driver Name"><br>
-            <button type="submit" class="btn-add">Add Van</button>
-        </form>
-    </div>
+        <section class="card-panel">
+            <h3>➕ Add New Fleet Van</h3>
+            <form action="{{ url_for('add_van') }}" method="POST" class="add-van-form">
+                <label>
+                    Van Model / Name *
+                    <input type="text" name="van_name" placeholder="e.g. Toyota Hiace Commuter" required>
+                </label>
+                <label>
+                    Plate Number
+                    <input type="text" name="plate_number" placeholder="e.g. ABC-1234">
+                </label>
+                <label>
+                    Assigned Driver
+                    <input type="text" name="driver_name" placeholder="e.g. Juan Dela Cruz">
+                </label>
+                <button type="submit" class="btn-primary">+ Add Van</button>
+            </form>
+        </section>
 
-    <h3>Van List and Availability ({{ vans|length }} Vans)</h3>
-    <div class="admin-table-wrap admin-table-wrap-vans">
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Van Details &amp; Update</th>
-                <th>Availability &amp; Schedule</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for van in vans %}
-            <tr>
-                <td>{{ van.id }}</td>
-                <td>
-                    <form action="{{ url_for('edit_van', van_id=van.id) }}" method="POST" class="van-edit-form">
-                        <input type="text" name="van_name" value="{{ van.name }}" placeholder="Van Name" aria-label="Van Name" required>
-                        <input type="text" name="plate_number" value="{{ van.plate_number or '' }}" placeholder="Plate Number" aria-label="Plate Number">
-                        <input type="text" name="driver_name" value="{{ van.driver_name or '' }}" placeholder="Driver Name" aria-label="Driver Name">
-                        <button type="submit" style="background:#007bff; color:white; border:none; padding:5px 8px; border-radius:3px; cursor:pointer;">Update</button>
-                    </form>
-                </td>
-                <td>
-                    {% set van_reservations = reservations | selectattr('vans', 'equalto', van.name) | list %}
-                    {% if van_reservations %}
-                        <div class="van-booking-list">
-                            {% for booking in van_reservations %}
-                                <div class="van-booking">
-                                    <strong>{{ booking.name }}</strong>
-                                    <span>{{ booking.pickup_date or 'Date not set' }} · {{ booking.pickup_time or 'Time not set' }}</span>
-                                    <small>{{ booking.status }}</small>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <span class="van-no-bookings">No linked reservations</span>
-                    {% endif %}
+        <section class="card-panel">
+            <h3>🚐 Fleet Availability &amp; Reservation Schedules ({{ vans|length }} Vans)</h3>
+            <div class="admin-table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">ID</th>
+                            <th style="width: 290px;">Van Details &amp; Update</th>
+                            <th>Availability &amp; Schedule (Start Date, Days &amp; End Date)</th>
+                            <th style="width: 140px;">Status</th>
+                            <th style="width: 150px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for van in vans %}
+                        <tr>
+                            <td><strong>#{{ van.id }}</strong></td>
+                            <td>
+                                <form action="{{ url_for('edit_van', van_id=van.id) }}" method="POST" class="van-edit-form">
+                                    <label>
+                                        Van Name
+                                        <input type="text" name="van_name" value="{{ van.name }}" placeholder="Van Name" required>
+                                    </label>
+                                    <label>
+                                        Plate Number
+                                        <input type="text" name="plate_number" value="{{ van.plate_number or '' }}" placeholder="Plate Number">
+                                    </label>
+                                    <label>
+                                        Driver Name
+                                        <input type="text" name="driver_name" value="{{ van.driver_name or '' }}" placeholder="Driver Name">
+                                    </label>
+                                    <button type="submit" class="btn-primary" style="justify-self: start;">Update Van Details</button>
+                                </form>
+                            </td>
+                            <td>
+                                {% set van_reservations = reservations | selectattr('vans', 'equalto', van.name) | list %}
 
-                    <details class="van-management-panel">
-                        <summary>Manage schedule and reservations</summary>
-                        <form action="{{ url_for('delete_van_reservations', van_id=van.id) }}" method="POST" style="margin: 10px 0;">
-                            <button type="submit" class="btn-delete" style="border: none; cursor: pointer;" onclick="return confirm('Permanently delete ALL reservations for this van? This cannot be undone.');">
-                                Delete All Reservations for This Van
-                            </button>
-                        </form>
+                                {% if van.schedule_date %}
+                                    <div class="van-booking-list">
+                                        <div class="van-booking van-booking-manual">
+                                            <div class="van-booking-header">
+                                                <strong>📌 Manual Schedule Reservation</strong>
+                                                <span class="badge-days">{{ van.schedule_days or 1 }} day{{ '' if (van.schedule_days or 1) == 1 else 's' }}</span>
+                                            </div>
+                                            <div class="van-booking-dates">
+                                                Start / Pick-up: {{ van.schedule_date }}
+                                                → Ends: {{ van.schedule_end_date or van.schedule_date }}
+                                                {% if van.schedule_time %} · ⏰ {{ van.schedule_time }}{% endif %}
+                                            </div>
+                                            {% if van.schedule_note %}
+                                                <div class="van-booking-meta">📝 {{ van.schedule_note }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
 
-                        <form action="{{ url_for('update_van_schedule', van_id=van.id) }}" method="POST" class="van-schedule-form">
-                            <strong>Manual schedule / note</strong>
-                            <div class="van-schedule-fields">
-                                <label>
-                                    Date
-                                    <input type="date" name="schedule_date" value="{{ van.schedule_date or '' }}">
-                                </label>
-                                <label>
-                                    Time
-                                    <input type="time" name="schedule_time" value="{{ van.schedule_time or '' }}">
-                                </label>
-                            </div>
-                            <label>
-                                Note
-                                <textarea name="schedule_note" maxlength="500" rows="2" placeholder="Add a manual schedule note">{{ van.schedule_note or '' }}</textarea>
-                            </label>
-                            <button type="submit" class="btn-add">Save Van Schedule</button>
-                        </form>
-                    </details>
-                </td>
-                <td>
-                    {% if van_statuses[van.id] == 'Available' %}
-                        <span style="color: #4CAF50; font-weight: bold;">Available</span>
-                    {% else %}
-                        <span style="color: #ff4d4d; font-weight: bold;">Not Available</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a href="{{ url_for('toggle_van_status', van_id=van.id) }}" class="btn-toggle">Change Status</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
+                                {% if van_reservations %}
+                                    <div class="van-booking-list">
+                                        {% for booking in van_reservations %}
+                                            <div class="van-booking" data-start="{{ booking.pickup_date or '' }}" data-days="{{ booking.days or 1 }}">
+                                                <div class="van-booking-header">
+                                                    <strong>👤 {{ booking.name }}</strong>
+                                                    <div>
+                                                        <span class="badge-days">{{ booking.days or 1 }} day{{ '' if (booking.days|int) == 1 else 's' }}</span>
+                                                        <span class="badge-status {{ 'badge-available' if booking.status == 'Approved' else 'badge-unavailable' }}">{{ booking.status }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="van-booking-dates">
+                                                    Start / Pick-up: {{ booking.pickup_date or 'Date not set' }}
+                                                    <span class="computed-end-label"></span>
+                                                    · ⏰ {{ booking.pickup_time or 'Time not set' }}
+                                                </div>
+                                                {% if booking.destination %}
+                                                    <div class="van-booking-meta">📍 Destination: {{ booking.destination }}</div>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% elif not van.schedule_date %}
+                                    <span class="van-no-bookings">No linked reservations or manual schedule set</span>
+                                {% endif %}
 
+                                <details class="van-management-panel" {% if van.schedule_date %}open{% endif %}>
+                                    <summary>⚙️ Manual Schedule Reservation &amp; Manage Bookings</summary>
+
+                                    <form action="{{ url_for('update_van_schedule', van_id=van.id) }}" method="POST" class="van-schedule-form js-schedule-calc-form">
+                                        <strong style="color: var(--crimson);">Manual Schedule Reservation</strong>
+                                        <div class="van-schedule-fields">
+                                            <label>
+                                                Pick-up / Start Date
+                                                <input type="date" name="schedule_date" class="js-start-date" value="{{ van.schedule_date or '' }}">
+                                            </label>
+                                            <label>
+                                                How Many Days
+                                                <input type="number" name="schedule_days" class="js-days-count" min="1" max="365" placeholder="e.g. 2" value="{{ van.schedule_days or (1 if van.schedule_date else '') }}">
+                                            </label>
+                                            <label>
+                                                Reservation End Date
+                                                <input type="date" name="schedule_end_date" class="js-end-date" value="{{ van.schedule_end_date or van.schedule_date or '' }}">
+                                            </label>
+                                            <label>
+                                                Pick-up Time
+                                                <input type="time" name="schedule_time" value="{{ van.schedule_time or '' }}">
+                                            </label>
+                                        </div>
+                                        <label>
+                                            Customer / Reservation Note
+                                            <textarea name="schedule_note" maxlength="500" rows="2" placeholder="Customer name, destination, or manual reservation remarks">{{ van.schedule_note or '' }}</textarea>
+                                        </label>
+                                        <div class="schedule-actions">
+                                            <button type="submit" class="btn-primary">💾 Save Manual Schedule</button>
+                                            {% if van.schedule_date or van.schedule_note %}
+                                                <button type="submit" name="clear_schedule" value="1" class="btn-delete">✕ Clear Manual Schedule</button>
+                                            {% endif %}
+                                        </div>
+                                    </form>
+
+                                    {% if van_reservations %}
+                                    <form action="{{ url_for('delete_van_reservations', van_id=van.id) }}" method="POST" style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed #d8c8c3;">
+                                        <button type="submit" class="btn-delete" onclick="return confirm('Permanently delete ALL customer reservations for {{ van.name | e }}? This cannot be undone.');">
+                                            🗑️ Delete All Customer Reservations for This Van
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </details>
+                            </td>
+                            <td>
+                                {% if van_statuses[van.id] == 'Available' %}
+                                    <span class="badge-status badge-available">● Available</span>
+                                {% else %}
+                                    <span class="badge-status badge-unavailable">● Not Available</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('toggle_van_status', van_id=van.id) }}" class="btn-secondary">Toggle Status</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function addDaysIso(isoDateStr, addDays) {
+            const parts = (isoDateStr || '').split('-').map(Number);
+            if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) return '';
+            const dt = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + addDays));
+            return dt.toISOString().slice(0, 10);
+        }
+
+        function diffDaysInclusive(startIso, endIso) {
+            const s = (startIso || '').split('-').map(Number);
+            const e = (endIso || '').split('-').map(Number);
+            if (s.length !== 3 || e.length !== 3) return null;
+            const dtS = Date.UTC(s[0], s[1] - 1, s[2]);
+            const dtE = Date.UTC(e[0], e[1] - 1, e[2]);
+            const diff = Math.round((dtE - dtS) / 86400000) + 1;
+            return diff >= 1 ? diff : null;
+        }
+
+        // Populate computed end date labels on customer bookings
+        document.querySelectorAll('.van-booking[data-start]').forEach(card => {
+            const start = card.getAttribute('data-start');
+            const days = parseInt(card.getAttribute('data-days') || '1', 10);
+            const label = card.querySelector('.computed-end-label');
+            if (start && label && days >= 1) {
+                const endIso = addDaysIso(start, days - 1);
+                if (endIso) {
+                    label.textContent = ' → Ends: ' + endIso;
+                }
+            }
+        });
+
+        // Two-way sync between Start Date, How Many Days, and Reservation End Date
+        document.querySelectorAll('.js-schedule-calc-form').forEach(form => {
+            const startInput = form.querySelector('.js-start-date');
+            const daysInput = form.querySelector('.js-days-count');
+            const endInput = form.querySelector('.js-end-date');
+            if (!startInput || !daysInput || !endInput) return;
+
+            function syncEndFromStartAndDays() {
+                if (!startInput.value) return;
+                let d = parseInt(daysInput.value || '1', 10);
+                if (!Number.isInteger(d) || d < 1) {
+                    d = 1;
+                    daysInput.value = '1';
+                }
+                endInput.min = startInput.value;
+                endInput.value = addDaysIso(startInput.value, d - 1);
+            }
+
+            function syncDaysFromStartAndEnd() {
+                if (!startInput.value || !endInput.value) return;
+                const d = diffDaysInclusive(startInput.value, endInput.value);
+                if (d !== null) {
+                    daysInput.value = String(d);
+                } else {
+                    // End date was picked earlier than start date; clamp to start date (1 day)
+                    endInput.value = startInput.value;
+                    daysInput.value = '1';
+                }
+            }
+
+            startInput.addEventListener('change', () => {
+                if (startInput.value) {
+                    endInput.min = startInput.value;
+                    if (!daysInput.value) daysInput.value = '1';
+                    syncEndFromStartAndDays();
+                }
+            });
+
+            daysInput.addEventListener('input', () => {
+                if (startInput.value && daysInput.value) {
+                    syncEndFromStartAndDays();
+                }
+            });
+
+            endInput.addEventListener('change', () => {
+                if (startInput.value && endInput.value) {
+                    syncDaysFromStartAndEnd();
+                } else if (!startInput.value && endInput.value) {
+                    startInput.value = endInput.value;
+                    daysInput.value = '1';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
