@@ -62,6 +62,30 @@ def reservation_period(reservation):
     return start_date, start_date + timedelta(days=days)
 
 
+def van_manual_period(van):
+    if not getattr(van, "schedule_date", None):
+        return None
+    try:
+        start_date = datetime.strptime(van.schedule_date, "%Y-%m-%d").date()
+    except (TypeError, ValueError):
+        return None
+    days = None
+    end_str = getattr(van, "schedule_end_date", None)
+    if end_str:
+        try:
+            end_inclusive = datetime.strptime(end_str, "%Y-%m-%d").date()
+            if end_inclusive >= start_date:
+                days = (end_inclusive - start_date).days + 1
+        except (TypeError, ValueError):
+            pass
+    if days is None:
+        try:
+            days = max(int(getattr(van, "schedule_days", None) or 1), 1)
+        except (TypeError, ValueError):
+            days = 1
+    return start_date, start_date + timedelta(days=days)
+
+
 def find_reservation_conflict(van_name, start_date, days, exclude_reservation_id=None):
     new_end_date = start_date + timedelta(days=days)
     approved_reservations = Reservation.query.filter_by(
@@ -78,6 +102,14 @@ def find_reservation_conflict(van_name, start_date, days, exclude_reservation_id
         booked_start, booked_end = period
         if start_date < booked_end and booked_start < new_end_date:
             return reservation
+
+    van_obj = Van.query.filter_by(name=van_name).first()
+    if van_obj is not None:
+        m_period = van_manual_period(van_obj)
+        if m_period is not None:
+            m_start, m_end = m_period
+            if start_date < m_end and m_start < new_end_date:
+                return van_obj
     return None
 
 
@@ -87,6 +119,12 @@ def get_van_display_status(van, reservations, today=None):
 
     today = today or datetime.now(BUSINESS_TIMEZONE).date()
     reserved_through = today + timedelta(days=3)
+    m_period = van_manual_period(van)
+    if m_period is not None:
+        m_start, m_end = m_period
+        if m_start <= reserved_through and m_end > today:
+            return "Not Available"
+
     for reservation in reservations:
         if reservation.vans != van.name or reservation.status != "Approved":
             continue
@@ -121,6 +159,8 @@ class Reservation(db.Model):
     days = db.Column(db.String(20), nullable=False)
     nights = db.Column(db.String(20), nullable=False)
     receipt = db.Column(db.String(200), nullable=True)
+    receipt_data = db.Column(db.LargeBinary, nullable=True)
+    receipt_mimetype = db.Column(db.String(150), nullable=True)
     status = db.Column(db.String(50), default="Pending")
 
 
@@ -131,6 +171,8 @@ class Van(db.Model):
     driver_name = db.Column(db.String(100), nullable=True)
     status = db.Column(db.String(50), default="Available")
     schedule_date = db.Column(db.String(10), nullable=True)
+    schedule_end_date = db.Column(db.String(10), nullable=True)
+    schedule_days = db.Column(db.Integer, nullable=True)
     schedule_time = db.Column(db.String(5), nullable=True)
     schedule_note = db.Column(db.String(500), nullable=True)
 
@@ -179,6 +221,8 @@ class TourApplication(db.Model):
     tour_date = db.Column(db.String(50), nullable=False)
     pax = db.Column(db.Integer, nullable=False)
     receipt = db.Column(db.String(200), nullable=True)
+    receipt_data = db.Column(db.LargeBinary, nullable=True)
+    receipt_mimetype = db.Column(db.String(150), nullable=True)
     status = db.Column(db.String(50), default="Pending")
 
 
@@ -187,6 +231,8 @@ class GCashPayment(db.Model):
     full_name = db.Column(db.String(100), nullable=False)
     contact = db.Column(db.String(50), nullable=False)
     receipt = db.Column(db.String(200), nullable=False)
+    receipt_data = db.Column(db.LargeBinary, nullable=True)
+    receipt_mimetype = db.Column(db.String(150), nullable=True)
     status = db.Column(db.String(50), default="Pending")
 
 
@@ -333,6 +379,40 @@ with app.app_context():
             connection.execute(
                 text("ALTER TABLE reservation ADD COLUMN destination VARCHAR(200)")
             )
+        if "receipt_data" not in reservation_columns:
+            connection.execute(
+                text(f"ALTER TABLE reservation ADD COLUMN receipt_data {binary_column_type}")
+            )
+        if "receipt_mimetype" not in reservation_columns:
+            connection.execute(
+                text("ALTER TABLE reservation ADD COLUMN receipt_mimetype VARCHAR(150)")
+            )
+
+    tour_columns = {
+        column["name"] for column in inspect(db.engine).get_columns("tour_application")
+    }
+    with db.engine.begin() as connection:
+        if "receipt_data" not in tour_columns:
+            connection.execute(
+                text(f"ALTER TABLE tour_application ADD COLUMN receipt_data {binary_column_type}")
+            )
+        if "receipt_mimetype" not in tour_columns:
+            connection.execute(
+                text("ALTER TABLE tour_application ADD COLUMN receipt_mimetype VARCHAR(150)")
+            )
+
+    gcash_columns = {
+        column["name"] for column in inspect(db.engine).get_columns("g_cash_payment")
+    }
+    with db.engine.begin() as connection:
+        if "receipt_data" not in gcash_columns:
+            connection.execute(
+                text(f"ALTER TABLE g_cash_payment ADD COLUMN receipt_data {binary_column_type}")
+            )
+        if "receipt_mimetype" not in gcash_columns:
+            connection.execute(
+                text("ALTER TABLE g_cash_payment ADD COLUMN receipt_mimetype VARCHAR(150)")
+            )
 
     van_columns = {column["name"] for column in inspect(db.engine).get_columns("van")}
     with db.engine.begin() as connection:
@@ -342,6 +422,10 @@ with app.app_context():
             connection.execute(text("ALTER TABLE van ADD COLUMN schedule_time VARCHAR(5)"))
         if "schedule_note" not in van_columns:
             connection.execute(text("ALTER TABLE van ADD COLUMN schedule_note VARCHAR(500)"))
+        if "schedule_end_date" not in van_columns:
+            connection.execute(text("ALTER TABLE van ADD COLUMN schedule_end_date VARCHAR(10)"))
+        if "schedule_days" not in van_columns:
+            connection.execute(text("ALTER TABLE van ADD COLUMN schedule_days INTEGER"))
 
     member_columns = {column["name"] for column in inspect(db.engine).get_columns("member")}
     if "must_change_password" not in member_columns:
@@ -585,6 +669,19 @@ def vans_list():
                 "days": reservation.days,
             }
         )
+    for van in all_vans:
+        m_period = van_manual_period(van)
+        if m_period is not None:
+            m_start, m_end = m_period
+            if m_end > datetime.now(BUSINESS_TIMEZONE).date():
+                reservations_by_van.setdefault(van.name, []).append(
+                    {
+                        "start_date": m_start.isoformat(),
+                        "last_reserved_date": (m_end - timedelta(days=1)).isoformat(),
+                        "pickup_time": van.schedule_time,
+                        "days": (m_end - m_start).days,
+                    }
+                )
     van_statuses = {
         van.id: get_van_display_status(van, approved_reservations)
         for van in all_vans
@@ -696,15 +793,24 @@ def upload_tour_receipt():
     file = request.files.get("receipt")
 
     if file and file.filename != "":
-        filename = secure_filename(f"tour_receipt_" + file.filename)
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+        safe_name = secure_filename(file.filename)
+        filename = f"tour_receipt_{uuid.uuid4().hex[:8]}_{safe_name}"[:200]
+        file_bytes = file.read()
+        file_mimetype = mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
+        try:
+            with open(os.path.join(app.config["UPLOAD_FOLDER"], filename), "wb") as fp:
+                fp.write(file_bytes)
+        except Exception:
+            pass
 
         tour_app = TourApplication.query.filter(
             db.func.lower(TourApplication.full_name) == sender_name
-        ).first()
+        ).order_by(TourApplication.id.desc()).first()
 
         if tour_app:
             tour_app.receipt = filename
+            tour_app.receipt_data = file_bytes
+            tour_app.receipt_mimetype = file_mimetype
             tour_app.status = "Receipt Uploaded"
             db.session.commit()
 
@@ -731,6 +837,18 @@ def rental():
                 "time": reservation.pickup_time or "",
             }
         )
+    for van in available_vans:
+        m_period = van_manual_period(van)
+        if m_period is not None:
+            m_start, m_end = m_period
+            if m_end > datetime.now(BUSINESS_TIMEZONE).date():
+                schedules_by_van.setdefault(van.name, []).append(
+                    {
+                        "start": m_start.isoformat(),
+                        "end": m_end.isoformat(),
+                        "time": van.schedule_time or "",
+                    }
+                )
 
     if request.method == "POST":
         name = request.form.get("name")
@@ -786,9 +904,18 @@ def rental():
 
         file = request.files.get("receipt")
         filename = ""
+        receipt_data = None
+        receipt_mimetype = None
         if file and file.filename != "":
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            safe_name = secure_filename(file.filename)
+            filename = f"rental_{uuid.uuid4().hex[:8]}_{safe_name}"[:200]
+            receipt_data = file.read()
+            receipt_mimetype = mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
+            try:
+                with open(os.path.join(app.config["UPLOAD_FOLDER"], filename), "wb") as fp:
+                    fp.write(receipt_data)
+            except Exception:
+                pass
 
         new_reservation = Reservation(
             name=name,
@@ -803,6 +930,8 @@ def rental():
             days=rental_days,
             nights=rental_nights,
             receipt=filename,
+            receipt_data=receipt_data,
+            receipt_mimetype=receipt_mimetype,
             status="Pending",
         )
         db.session.add(new_reservation)
@@ -855,13 +984,22 @@ def submit_gcash_payment():
     file = request.files.get("receipt")
 
     if file and file.filename != "":
-        filename = secure_filename(f"gcash_{file.filename}")
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+        safe_name = secure_filename(file.filename)
+        filename = f"gcash_{uuid.uuid4().hex[:8]}_{safe_name}"[:200]
+        file_bytes = file.read()
+        file_mimetype = mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
+        try:
+            with open(os.path.join(app.config["UPLOAD_FOLDER"], filename), "wb") as fp:
+                fp.write(file_bytes)
+        except Exception:
+            pass
 
         new_payment = GCashPayment(
             full_name=full_name,
             contact=contact,
             receipt=filename,
+            receipt_data=file_bytes,
+            receipt_mimetype=file_mimetype,
             status="Pending"
         )
         db.session.add(new_payment)
@@ -874,12 +1012,21 @@ def submit_gcash_payment():
 def upload_receipt(res_id):
     file = request.files.get("receipt")
     if file and file.filename != "":
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+        safe_name = secure_filename(file.filename)
+        filename = f"receipt_{res_id}_{uuid.uuid4().hex[:6]}_{safe_name}"[:200]
+        file_bytes = file.read()
+        file_mimetype = mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
+        try:
+            with open(os.path.join(app.config["UPLOAD_FOLDER"], filename), "wb") as fp:
+                fp.write(file_bytes)
+        except Exception:
+            pass
 
-        reservation = Reservation.query.get(res_id)
+        reservation = db.session.get(Reservation, res_id)
         if reservation:
             reservation.receipt = filename
+            reservation.receipt_data = file_bytes
+            reservation.receipt_mimetype = file_mimetype
             db.session.commit()
             session['upload_success'] = True
 
@@ -1665,8 +1812,10 @@ def update_reservation_schedule(res_id):
 
     pickup_date = request.form.get("pickup_date", "").strip()
     pickup_time = request.form.get("pickup_time", "").strip()
+    days_raw = request.form.get("days", "").strip()
+    end_date_raw = request.form.get("end_date", "").strip()
     try:
-        datetime.strptime(pickup_date, "%Y-%m-%d")
+        start_dt = datetime.strptime(pickup_date, "%Y-%m-%d").date()
         datetime.strptime(pickup_time, "%H:%M")
     except ValueError:
         flash("Enter a valid pickup date and time.", "error")
@@ -1677,11 +1826,34 @@ def update_reservation_schedule(res_id):
         flash("Reservation not found.", "error")
         return redirect(url_for("admin_dashboard"))
 
+    rental_days = None
+    if days_raw:
+        try:
+            rental_days = int(days_raw)
+            if rental_days < 1:
+                raise ValueError
+        except ValueError:
+            flash("Number of days must be at least 1.", "error")
+            return redirect(url_for("admin_dashboard"))
+    elif end_date_raw:
+        try:
+            end_dt = datetime.strptime(end_date_raw, "%Y-%m-%d").date()
+            if end_dt < start_dt:
+                flash("End date cannot be earlier than the pickup date.", "error")
+                return redirect(url_for("admin_dashboard"))
+            rental_days = (end_dt - start_dt).days + 1
+        except ValueError:
+            flash("Enter a valid end date.", "error")
+            return redirect(url_for("admin_dashboard"))
+
     reservation.pickup_date = pickup_date
     reservation.pickup_time = pickup_time
+    if rental_days is not None:
+        reservation.days = str(rental_days)
+        reservation.nights = str(max(rental_days - 1, 0))
     db.session.commit()
-    flash(f"Pickup schedule updated for {reservation.name}.", "success")
-    return redirect(url_for("admin_dashboard"))
+    flash(f"Reservation schedule updated for {reservation.name}.", "success")
+    return redirect(request.referrer or url_for("admin_dashboard"))
 
 
 @app.route("/admin/reservation/<int:res_id>/delete", methods=["POST"])
@@ -1744,6 +1916,342 @@ def approve_franchise(app_id):
         app_entry.schedule = request.form.get("schedule")
         db.session.commit()
     return redirect(url_for("admin_dashboard"))
+
+
+
+
+def _find_local_fallback_bytes(filename):
+    """Check static/uploads and static/images for legacy files and return (bytes, mimetype) if found."""
+    if not filename:
+        return None, None
+    candidates = [
+        os.path.join(app.config["UPLOAD_FOLDER"], filename),
+        os.path.join(app.root_path, "static", "images", filename),
+    ]
+    if filename.startswith("tour_receipt_"):
+        stripped = filename[len("tour_receipt_"):]
+        candidates.append(os.path.join(app.root_path, "static", "images", stripped))
+    for path in candidates:
+        if os.path.isfile(path):
+            try:
+                with open(path, "rb") as fp:
+                    data = fp.read()
+                mime = mimetypes.guess_type(path)[0] or "application/octet-stream"
+                return data, mime
+            except Exception:
+                pass
+    return None, None
+
+
+def _send_binary_receipt(file_data, stored_mimetype, filename):
+    guessed_mimetype = mimetypes.guess_type(filename or "receipt.jpg")[0] or "application/octet-stream"
+    safe_inline_types = {"application/pdf", "image/jpeg", "image/png", "image/webp", "image/gif"}
+    mimetype = stored_mimetype if stored_mimetype in safe_inline_types else guessed_mimetype
+    can_display_inline = mimetype in safe_inline_types
+    return send_file(
+        BytesIO(file_data),
+        mimetype=mimetype,
+        as_attachment=not can_display_inline,
+        download_name=filename or "receipt",
+        max_age=0,
+    )
+
+
+def _render_missing_legacy_receipt_page(record_type, record_id, filename, summary_lines):
+    summary_html = "".join(f"<li>{line}</li>" for line in summary_lines)
+    upload_url = url_for("admin_upload_receipt", record_type=record_type, record_id=record_id)
+    dash_url = url_for("admin_dashboard")
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Viewer - EnAsia Admin</title>
+    <style>
+        body {{
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            background: #eae5e3;
+            color: #231717;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }}
+        .card {{
+            background: #faf8f7;
+            border: 1px solid #dfd3cf;
+            border-top: 4px solid #c9a227;
+            border-radius: 14px;
+            max-width: 560px;
+            width: 100%;
+            padding: 28px 30px;
+            box-shadow: 0 12px 32px rgba(66, 12, 16, 0.10);
+        }}
+        .eyebrow {{
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #9a730c;
+            margin: 0 0 6px 0;
+        }}
+        h2 {{
+            margin: 0 0 12px 0;
+            color: #420c10;
+            font-size: 22px;
+        }}
+        p {{
+            font-size: 14px;
+            line-height: 1.55;
+            color: #4e3838;
+        }}
+        ul {{
+            background: #f3ecea;
+            border: 1px solid #dfd3cf;
+            border-radius: 10px;
+            padding: 14px 18px 14px 34px;
+            margin: 14px 0 18px 0;
+            font-size: 13.5px;
+            line-height: 1.65;
+        }}
+        .upload-box {{
+            background: linear-gradient(135deg, #f7f0e2 0%, #f5e6e7 100%);
+            border: 1px solid rgba(201, 162, 39, 0.55);
+            border-radius: 10px;
+            padding: 16px 18px;
+            margin-top: 16px;
+        }}
+        .upload-box strong {{
+            display: block;
+            color: #420c10;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }}
+        input[type="file"] {{
+            width: 100%;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }}
+        .btn {{
+            background: linear-gradient(135deg, #420c10 0%, #68181f 100%);
+            color: #fffdf9;
+            border: 1px solid rgba(212, 175, 55, 0.55);
+            padding: 10px 16px;
+            border-radius: 7px;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }}
+        .btn-secondary {{
+            background: #f6f0ec;
+            color: #420c10;
+            border: 1px solid #d1bfae;
+            margin-left: 8px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <p class="eyebrow">EnAsia NeonDB Receipt Storage</p>
+        <h2>🧾 Legacy Receipt Needs Re-Attachment</h2>
+        <p>
+            The receipt filename <strong>{filename}</strong> was uploaded before <strong>NeonDB binary receipt storage</strong> was enabled, and the temporary container file was cleared during an earlier server redeploy.
+        </p>
+        <ul>{summary_html}</ul>
+        <p>
+            All new client and admin receipt uploads are now permanently stored directly inside <strong>NeonDB PostgreSQL (BYTEA)</strong> so they will never be lost on any future redeploy.
+        </p>
+        <div class="upload-box">
+            <strong>📤 Re-attach / Upload Receipt Screenshot to NeonDB Now:</strong>
+            <form action="{upload_url}" method="POST" enctype="multipart/form-data">
+                <input type="file" name="receipt" accept="image/*,.pdf" required>
+                <button type="submit" class="btn">💾 Save Receipt to NeonDB</button>
+                <a href="{dash_url}" class="btn btn-secondary">← Back to Dashboard</a>
+            </form>
+        </div>
+    </div>
+</body>
+</html>""", 200
+
+
+@app.route("/admin/reservation/<int:res_id>/receipt")
+def view_reservation_receipt(res_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+    r = db.session.get(Reservation, res_id)
+    if r is None or not r.receipt:
+        abort(404)
+    if r.receipt_data:
+        return _send_binary_receipt(r.receipt_data, r.receipt_mimetype, r.receipt)
+    data, mime = _find_local_fallback_bytes(r.receipt)
+    if data:
+        r.receipt_data = data
+        r.receipt_mimetype = mime
+        db.session.commit()
+        return _send_binary_receipt(data, mime, r.receipt)
+    return _render_missing_legacy_receipt_page(
+        "reservation",
+        r.id,
+        r.receipt,
+        [
+            f"<strong>Reservation ID:</strong> #{r.id}",
+            f"<strong>Customer:</strong> {r.name} ({r.contact})",
+            f"<strong>Van &amp; Destination:</strong> {r.vans} — {r.destination or 'N/A'}",
+            f"<strong>Schedule:</strong> {r.pickup_date or 'Not set'} ({r.days} days) · {r.status}",
+        ],
+    )
+
+
+@app.route("/admin/tour/<int:app_id>/receipt")
+def view_tour_receipt(app_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+    t = db.session.get(TourApplication, app_id)
+    if t is None or not t.receipt:
+        abort(404)
+    if t.receipt_data:
+        return _send_binary_receipt(t.receipt_data, t.receipt_mimetype, t.receipt)
+    data, mime = _find_local_fallback_bytes(t.receipt)
+    if data:
+        t.receipt_data = data
+        t.receipt_mimetype = mime
+        db.session.commit()
+        return _send_binary_receipt(data, mime, t.receipt)
+    return _render_missing_legacy_receipt_page(
+        "tour",
+        t.id,
+        t.receipt,
+        [
+            f"<strong>Tour Booking ID:</strong> #{t.id}",
+            f"<strong>Customer:</strong> {t.full_name} ({t.contact})",
+            f"<strong>Tour Package:</strong> {t.tour_package} ({t.tour_date}, {t.pax} pax)",
+        ],
+    )
+
+
+@app.route("/admin/gcash/<int:payment_id>/receipt")
+def view_gcash_receipt(payment_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+    p = db.session.get(GCashPayment, payment_id)
+    if p is None or not p.receipt:
+        abort(404)
+    if p.receipt_data:
+        return _send_binary_receipt(p.receipt_data, p.receipt_mimetype, p.receipt)
+    data, mime = _find_local_fallback_bytes(p.receipt)
+    if data:
+        p.receipt_data = data
+        p.receipt_mimetype = mime
+        db.session.commit()
+        return _send_binary_receipt(data, mime, p.receipt)
+    return _render_missing_legacy_receipt_page(
+        "gcash",
+        p.id,
+        p.receipt,
+        [
+            f"<strong>GCash Payment ID:</strong> #{p.id}",
+            f"<strong>Sender:</strong> {p.full_name} ({p.contact})",
+        ],
+    )
+
+
+@app.route("/admin/receipt/<record_type>/<int:record_id>/upload", methods=["POST"])
+def admin_upload_receipt(record_type, record_id):
+    if not session.get("logged_in"):
+        return redirect(url_for("admin_login"))
+    file = request.files.get("receipt")
+    if not file or not file.filename:
+        flash("Please choose a receipt image or PDF file to upload.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    safe_name = secure_filename(file.filename)
+    file_bytes = file.read()
+    file_mimetype = mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
+    if not file_bytes:
+        flash("Uploaded file is empty.", "error")
+        return redirect(url_for("admin_dashboard"))
+
+    filename = f"{record_type}_{record_id}_{uuid.uuid4().hex[:6]}_{safe_name}"[:200]
+    try:
+        with open(os.path.join(app.config["UPLOAD_FOLDER"], filename), "wb") as fp:
+            fp.write(file_bytes)
+    except Exception:
+        pass
+
+    if record_type == "reservation":
+        rec = db.session.get(Reservation, record_id)
+        if rec is None:
+            abort(404)
+        rec.receipt = filename
+        rec.receipt_data = file_bytes
+        rec.receipt_mimetype = file_mimetype
+        db.session.commit()
+        flash(f"Receipt saved to NeonDB for reservation #{rec.id} ({rec.name}).", "success")
+        return redirect(url_for("view_reservation_receipt", res_id=rec.id))
+    elif record_type == "tour":
+        rec = db.session.get(TourApplication, record_id)
+        if rec is None:
+            abort(404)
+        rec.receipt = filename
+        rec.receipt_data = file_bytes
+        rec.receipt_mimetype = file_mimetype
+        rec.status = "Receipt Uploaded"
+        db.session.commit()
+        flash(f"Receipt saved to NeonDB for tour application #{rec.id} ({rec.full_name}).", "success")
+        return redirect(url_for("view_tour_receipt", app_id=rec.id))
+    elif record_type == "gcash":
+        rec = db.session.get(GCashPayment, record_id)
+        if rec is None:
+            abort(404)
+        rec.receipt = filename
+        rec.receipt_data = file_bytes
+        rec.receipt_mimetype = file_mimetype
+        db.session.commit()
+        flash(f"Receipt saved to NeonDB for GCash payment #{rec.id} ({rec.full_name}).", "success")
+        return redirect(url_for("view_gcash_receipt", payment_id=rec.id))
+    abort(404)
+
+
+@app.route("/static/uploads/<path:filename>")
+def serve_uploaded_file_from_neondb(filename):
+    """Intercept /static/uploads/<filename> so files stored in NeonDB are served seamlessly even after container restarts."""
+    res = Reservation.query.filter_by(receipt=filename).order_by(Reservation.id.desc()).first()
+    if res and res.receipt_data:
+        return _send_binary_receipt(res.receipt_data, res.receipt_mimetype, res.receipt)
+
+    tour = TourApplication.query.filter_by(receipt=filename).order_by(TourApplication.id.desc()).first()
+    if tour and tour.receipt_data:
+        return _send_binary_receipt(tour.receipt_data, tour.receipt_mimetype, tour.receipt)
+
+    gcash = GCashPayment.query.filter_by(receipt=filename).order_by(GCashPayment.id.desc()).first()
+    if gcash and gcash.receipt_data:
+        return _send_binary_receipt(gcash.receipt_data, gcash.receipt_mimetype, gcash.receipt)
+
+    data, mime = _find_local_fallback_bytes(filename)
+    if data:
+        if res and not res.receipt_data:
+            res.receipt_data = data
+            res.receipt_mimetype = mime
+            db.session.commit()
+        elif tour and not tour.receipt_data:
+            tour.receipt_data = data
+            tour.receipt_mimetype = mime
+            db.session.commit()
+        elif gcash and not gcash.receipt_data:
+            gcash.receipt_data = data
+            gcash.receipt_mimetype = mime
+            db.session.commit()
+        return _send_binary_receipt(data, mime, filename)
+
+    if res and session.get("logged_in"):
+        return redirect(url_for("view_reservation_receipt", res_id=res.id))
+    if tour and session.get("logged_in"):
+        return redirect(url_for("view_tour_receipt", app_id=tour.id))
+    if gcash and session.get("logged_in"):
+        return redirect(url_for("view_gcash_receipt", payment_id=gcash.id))
+    abort(404)
 
 
 @app.route("/admin/franchise/<int:app_id>/document/<document_type>")
@@ -1851,29 +2359,81 @@ def update_van_schedule(van_id):
     if not session.get("logged_in"):
         return redirect(url_for("admin_login"))
 
-    schedule_date = request.form.get("schedule_date", "").strip()
-    schedule_time = request.form.get("schedule_time", "").strip()
-    schedule_note = request.form.get("schedule_note", "").strip()
-
-    try:
-        if schedule_date:
-            datetime.strptime(schedule_date, "%Y-%m-%d")
-        if schedule_time:
-            datetime.strptime(schedule_time, "%H:%M")
-    except ValueError:
-        flash("Enter a valid manual schedule date and time.", "error")
-        return redirect(request.referrer or url_for("admin_vans_schedule"))
-
     van = db.session.get(Van, van_id)
     if van is None:
         flash("Van not found.", "error")
         return redirect(request.referrer or url_for("admin_vans_schedule"))
 
+    if request.form.get("clear_schedule") == "1":
+        van.schedule_date = None
+        van.schedule_end_date = None
+        van.schedule_days = None
+        van.schedule_time = None
+        van.schedule_note = None
+        db.session.commit()
+        flash(f"Cleared manual schedule for {van.name}.", "info")
+        return redirect(request.referrer or url_for("admin_vans_schedule"))
+
+    schedule_date = request.form.get("schedule_date", "").strip()
+    schedule_end_date = request.form.get("schedule_end_date", "").strip()
+    schedule_days_raw = request.form.get("schedule_days", "").strip()
+    schedule_time = request.form.get("schedule_time", "").strip()
+    schedule_note = request.form.get("schedule_note", "").strip()
+
+    start_dt = None
+    end_dt = None
+    days_val = None
+
+    try:
+        if schedule_date:
+            start_dt = datetime.strptime(schedule_date, "%Y-%m-%d").date()
+        if schedule_end_date:
+            end_dt = datetime.strptime(schedule_end_date, "%Y-%m-%d").date()
+        if schedule_time:
+            datetime.strptime(schedule_time, "%H:%M")
+        if schedule_days_raw:
+            days_val = int(schedule_days_raw)
+            if days_val < 1:
+                raise ValueError
+    except ValueError:
+        flash("Enter a valid start date, number of days, end date, and time.", "error")
+        return redirect(request.referrer or url_for("admin_vans_schedule"))
+
+    if start_dt is not None:
+        if end_dt is not None:
+            if end_dt < start_dt:
+                flash("Reservation end date cannot be earlier than the pick-up / start date.", "error")
+                return redirect(request.referrer or url_for("admin_vans_schedule"))
+            # If user entered both, keep them consistent:
+            computed_days = (end_dt - start_dt).days + 1
+            if days_val is not None and days_val != computed_days:
+                # Recompute end_dt from days_val if user typed days, unless end_dt was specifically set
+                end_dt = start_dt + timedelta(days=days_val - 1)
+            else:
+                days_val = computed_days
+        elif days_val is not None:
+            end_dt = start_dt + timedelta(days=days_val - 1)
+        else:
+            days_val = 1
+            end_dt = start_dt
+        schedule_end_date = end_dt.isoformat()
+    else:
+        schedule_end_date = ""
+        days_val = None
+
     van.schedule_date = schedule_date or None
+    van.schedule_end_date = schedule_end_date or None
+    van.schedule_days = days_val
     van.schedule_time = schedule_time or None
     van.schedule_note = schedule_note or None
     db.session.commit()
-    flash(f"Manual schedule updated for {van.name}.", "success")
+    if van.schedule_date:
+        flash(
+            f"Manual schedule saved for {van.name}: {van.schedule_date} to {van.schedule_end_date} ({van.schedule_days} day{'s' if van.schedule_days != 1 else ''}).",
+            "success",
+        )
+    else:
+        flash(f"Manual schedule updated for {van.name}.", "success")
     return redirect(request.referrer or url_for("admin_vans_schedule"))
 
 
