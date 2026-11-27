@@ -113,6 +113,86 @@ def find_reservation_conflict(van_name, start_date, days, exclude_reservation_id
     return None
 
 
+
+def sync_van_manual_schedule_to_reservation(van):
+    """Ensure a van's active manual schedule is reflected as an Approved row in the Reservation table."""
+    if not van or not van.schedule_date:
+        return None
+
+    days_int = max(int(van.schedule_days or 1), 1)
+    nights_int = max(days_int - 1, 0)
+    dest_text = (van.schedule_note or "Manual Schedule").strip()
+    time_text = (van.schedule_time or "08:00").strip()
+    driver_label = f" ({van.driver_name.strip()})" if (van.driver_name and van.driver_name.strip()) else ""
+    default_customer_name = f"Manual Schedule{driver_label}"
+
+    existing_manual = (
+        Reservation.query.filter_by(vans=van.name, address="Admin Manual Schedule")
+        .order_by(Reservation.id.desc())
+        .first()
+    )
+    if existing_manual is None:
+        existing_same_date = (
+            Reservation.query.filter_by(vans=van.name, pickup_date=van.schedule_date)
+            .order_by(Reservation.id.desc())
+            .first()
+        )
+        if existing_same_date is not None:
+            if not existing_same_date.destination and dest_text:
+                existing_same_date.destination = dest_text
+            existing_same_date.days = str(days_int)
+            existing_same_date.nights = str(nights_int)
+            if van.schedule_time:
+                existing_same_date.pickup_time = van.schedule_time
+            existing_same_date.status = "Approved"
+            return existing_same_date
+
+    if existing_manual is not None:
+        existing_manual.name = default_customer_name[:100]
+        existing_manual.contact = van.plate_number or "Manual Entry"
+        existing_manual.pickup_date = van.schedule_date
+        existing_manual.pickup_time = time_text
+        existing_manual.days = str(days_int)
+        existing_manual.nights = str(nights_int)
+        existing_manual.destination = dest_text
+        existing_manual.pickup = dest_text
+        existing_manual.dropoff = dest_text
+        existing_manual.status = "Approved"
+        return existing_manual
+
+    new_res = Reservation(
+        name=default_customer_name[:100],
+        address="Admin Manual Schedule",
+        contact=van.plate_number or "Manual Entry",
+        vans=van.name,
+        pickup=dest_text[:100] or "Manual Schedule",
+        destination=dest_text[:200] or "Manual Schedule",
+        pickup_date=van.schedule_date,
+        pickup_time=time_text[:5],
+        dropoff=dest_text[:100] or "Manual Schedule",
+        days=str(days_int),
+        nights=str(nights_int),
+        receipt="",
+        status="Approved",
+    )
+    db.session.add(new_res)
+    return new_res
+
+
+def sync_all_manual_van_schedules():
+    """Backfill/sync all vans that have a manual schedule into the Reservation table."""
+    changed = False
+    for v in Van.query.all():
+        if v.schedule_date:
+            sync_van_manual_schedule_to_reservation(v)
+            changed = True
+    if changed:
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
 def get_van_display_status(van, reservations, today=None):
     if van.status != "Available":
         return "Not Available"
@@ -674,14 +754,18 @@ def vans_list():
         if m_period is not None:
             m_start, m_end = m_period
             if m_end > datetime.now(BUSINESS_TIMEZONE).date():
-                reservations_by_van.setdefault(van.name, []).append(
-                    {
-                        "start_date": m_start.isoformat(),
-                        "last_reserved_date": (m_end - timedelta(days=1)).isoformat(),
-                        "pickup_time": van.schedule_time,
-                        "days": (m_end - m_start).days,
-                    }
-                )
+                s_iso = m_start.isoformat()
+                e_iso = (m_end - timedelta(days=1)).isoformat()
+                existing_list = reservations_by_van.setdefault(van.name, [])
+                if not any(item["start_date"] == s_iso and item["last_reserved_date"] == e_iso for item in existing_list):
+                    existing_list.append(
+                        {
+                            "start_date": s_iso,
+                            "last_reserved_date": e_iso,
+                            "pickup_time": van.schedule_time,
+                            "days": (m_end - m_start).days,
+                        }
+                    )
     van_statuses = {
         van.id: get_van_display_status(van, approved_reservations)
         for van in all_vans
@@ -842,13 +926,17 @@ def rental():
         if m_period is not None:
             m_start, m_end = m_period
             if m_end > datetime.now(BUSINESS_TIMEZONE).date():
-                schedules_by_van.setdefault(van.name, []).append(
-                    {
-                        "start": m_start.isoformat(),
-                        "end": m_end.isoformat(),
-                        "time": van.schedule_time or "",
-                    }
-                )
+                s_iso = m_start.isoformat()
+                e_iso = m_end.isoformat()
+                existing_list = schedules_by_van.setdefault(van.name, [])
+                if not any(item["start"] == s_iso and item["end"] == e_iso for item in existing_list):
+                    existing_list.append(
+                        {
+                            "start": s_iso,
+                            "end": e_iso,
+                            "time": van.schedule_time or "",
+                        }
+                    )
 
     if request.method == "POST":
         name = request.form.get("name")
@@ -1237,6 +1325,7 @@ def admin_dashboard():
     if not session.get("logged_in"):
         return redirect(url_for("admin_login"))
     OfficeUser = office_models["OfficeUser"]
+    sync_all_manual_van_schedules()
     all_reservations = Reservation.query.all()
     all_vans = Van.query.all()
     all_rates = DestinationRate.query.all()
@@ -1846,11 +1935,19 @@ def update_reservation_schedule(res_id):
             flash("Enter a valid end date.", "error")
             return redirect(url_for("admin_dashboard"))
 
+    old_pickup_date = reservation.pickup_date
     reservation.pickup_date = pickup_date
     reservation.pickup_time = pickup_time
     if rental_days is not None:
         reservation.days = str(rental_days)
         reservation.nights = str(max(rental_days - 1, 0))
+    for v in Van.query.filter_by(name=reservation.vans).all():
+        if reservation.address == "Admin Manual Schedule" or (v.schedule_date and v.schedule_date == old_pickup_date):
+            v.schedule_date = pickup_date
+            v.schedule_time = pickup_time
+            if rental_days is not None:
+                v.schedule_days = rental_days
+                v.schedule_end_date = (start_dt + timedelta(days=rental_days - 1)).isoformat()
     db.session.commit()
     flash(f"Reservation schedule updated for {reservation.name}.", "success")
     return redirect(request.referrer or url_for("admin_dashboard"))
@@ -1868,7 +1965,16 @@ def delete_reservation(res_id):
 
     reservation_name = reservation.name
     van_name = reservation.vans
+    res_pickup_date = reservation.pickup_date
+    is_manual = (reservation.address == "Admin Manual Schedule")
     db.session.delete(reservation)
+    for v in Van.query.filter_by(name=van_name).all():
+        if is_manual or (v.schedule_date and v.schedule_date == res_pickup_date):
+            v.schedule_date = None
+            v.schedule_end_date = None
+            v.schedule_days = None
+            v.schedule_time = None
+            v.schedule_note = None
     db.session.commit()
     flash(
         f"Deleted {reservation_name}'s reservation for {van_name}.",
@@ -1898,6 +2004,11 @@ def delete_van_reservations(van_id):
     deleted_count = Reservation.query.filter_by(vans=van.name).delete(
         synchronize_session=False
     )
+    van.schedule_date = None
+    van.schedule_end_date = None
+    van.schedule_days = None
+    van.schedule_time = None
+    van.schedule_note = None
     db.session.commit()
     flash(
         f"Deleted {deleted_count} reservation(s) for {van.name}.",
@@ -2326,15 +2437,19 @@ def delete_tour(app_id):
 def admin_vans_schedule():
     if not session.get("logged_in"):
         return redirect(url_for("admin_login"))
+    sync_all_manual_van_schedules()
     all_reservations = Reservation.query.all()
     all_vans = Van.query.all()
     van_statuses = {
         van.id: get_van_display_status(van, all_reservations)
         for van in all_vans
     }
+    customer_reservations = [
+        r for r in all_reservations if r.address != "Admin Manual Schedule"
+    ]
     return render_template(
         "admin_vans_schedule.html",
-        reservations=all_reservations,
+        reservations=customer_reservations,
         vans=all_vans,
         van_statuses=van_statuses,
     )
@@ -2365,13 +2480,14 @@ def update_van_schedule(van_id):
         return redirect(request.referrer or url_for("admin_vans_schedule"))
 
     if request.form.get("clear_schedule") == "1":
+        Reservation.query.filter_by(vans=van.name, address="Admin Manual Schedule").delete(synchronize_session=False)
         van.schedule_date = None
         van.schedule_end_date = None
         van.schedule_days = None
         van.schedule_time = None
         van.schedule_note = None
         db.session.commit()
-        flash(f"Cleared manual schedule for {van.name}.", "info")
+        flash(f"Cleared manual schedule for {van.name} and removed it from the Reservation List.", "info")
         return redirect(request.referrer or url_for("admin_vans_schedule"))
 
     schedule_date = request.form.get("schedule_date", "").strip()
@@ -2426,10 +2542,14 @@ def update_van_schedule(van_id):
     van.schedule_days = days_val
     van.schedule_time = schedule_time or None
     van.schedule_note = schedule_note or None
+    if van.schedule_date:
+        sync_van_manual_schedule_to_reservation(van)
+    else:
+        Reservation.query.filter_by(vans=van.name, address="Admin Manual Schedule").delete(synchronize_session=False)
     db.session.commit()
     if van.schedule_date:
         flash(
-            f"Manual schedule saved for {van.name}: {van.schedule_date} to {van.schedule_end_date} ({van.schedule_days} day{'s' if van.schedule_days != 1 else ''}).",
+            f"Manual schedule saved for {van.name} ({van.schedule_date} to {van.schedule_end_date}, {van.schedule_days} day{'s' if van.schedule_days != 1 else ''}) and added to the Reservation List.",
             "success",
         )
     else:
